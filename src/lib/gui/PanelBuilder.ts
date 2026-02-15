@@ -67,6 +67,8 @@ export interface PanelCallbacks {
   onColorRangeChange: (config: ColorRangeConfig) => void;
   onShowMetadata?: (itemId: string) => void;
   onCrossSectionPanel?: () => HTMLElement | null;
+  onRebuildIndex?: (onProgress: (progress: number, total: number) => void) => Promise<void>;
+  getIndexInfo?: () => { source: string; itemCount: number; generatedAt?: string };
 }
 
 /**
@@ -249,6 +251,54 @@ export class PanelBuilder {
     drawnActions.appendChild(clearDrawnBtn);
 
     content.appendChild(drawnActions);
+
+    // Index info and refresh
+    const indexRow = document.createElement('div');
+    indexRow.className = 'noaa-lidar-index-row';
+
+    const indexInfo = document.createElement('span');
+    indexInfo.className = 'noaa-lidar-index-info';
+    indexInfo.id = 'noaa-lidar-index-info';
+    if (this._callbacks.getIndexInfo) {
+      const info = this._callbacks.getIndexInfo();
+      indexInfo.textContent = `${info.itemCount} datasets`;
+      indexInfo.title = info.generatedAt
+        ? `Index generated: ${new Date(info.generatedAt).toLocaleDateString()}`
+        : 'Using cached index';
+    }
+    indexRow.appendChild(indexInfo);
+
+    const refreshBtn = document.createElement('button');
+    refreshBtn.className = 'noaa-lidar-btn-link';
+    refreshBtn.textContent = 'Refresh Index';
+    refreshBtn.title = 'Fetch latest data from NOAA (takes a few minutes)';
+    refreshBtn.addEventListener('click', async () => {
+      if (this._callbacks.onRebuildIndex) {
+        refreshBtn.disabled = true;
+        refreshBtn.textContent = 'Refreshing...';
+        indexInfo.textContent = '0%';
+
+        try {
+          await this._callbacks.onRebuildIndex((progress, total) => {
+            const pct = Math.round((progress / total) * 100);
+            indexInfo.textContent = `${pct}%`;
+          });
+
+          if (this._callbacks.getIndexInfo) {
+            const info = this._callbacks.getIndexInfo();
+            indexInfo.textContent = `${info.itemCount} datasets`;
+          }
+          refreshBtn.textContent = 'Refresh Index';
+        } catch (err) {
+          indexInfo.textContent = 'Error';
+          refreshBtn.textContent = 'Retry';
+        }
+        refreshBtn.disabled = false;
+      }
+    });
+    indexRow.appendChild(refreshBtn);
+
+    content.appendChild(indexRow);
 
     // Loading indicator
     const loading = document.createElement('div');

@@ -1,4 +1,5 @@
 import type { StacSearchResponse, StacItem, CacheEntry } from '../core/types';
+import prebuiltIndex from '../../data/stac-index.json';
 
 const NOAA_STAC_CATALOG =
   'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/entwine/stac/catalog.json';
@@ -39,10 +40,25 @@ interface CachedItem {
 }
 
 /**
+ * Pre-built index structure.
+ */
+interface PrebuiltIndex {
+  version: number;
+  generatedAt: string;
+  itemCount: number;
+  items: CachedItem[];
+}
+
+/**
+ * Progress callback for rebuild operation.
+ */
+export type RebuildProgressCallback = (progress: number, total: number) => void;
+
+/**
  * Client for searching NOAA Coastal LiDAR EPT data from AWS Open Data.
  *
- * The NOAA STAC catalog has a flat structure with direct item links.
- * This client fetches and caches the item index for efficient spatial queries.
+ * Uses a pre-built index for instant searches. The index can be rebuilt
+ * to fetch the latest data from the NOAA STAC catalog.
  *
  * @example
  * ```typescript
@@ -58,7 +74,6 @@ export class StacSearcher {
   private _eptBaseUrl: string;
   private _cacheDuration: number;
   private _items: CachedItem[] | null = null;
-  private _loadPromise: Promise<CachedItem[]> | null = null;
 
   /**
    * Creates a new StacSearcher instance.
@@ -93,9 +108,6 @@ export class StacSearcher {
 
   /**
    * Validates and clamps a bounding box to valid geographic coordinates.
-   *
-   * @param bbox - Bounding box [west, south, east, north]
-   * @returns Validated and clamped bounding box
    */
   private _validateBbox(
     bbox: [number, number, number, number]
@@ -116,17 +128,28 @@ export class StacSearcher {
   }
 
   /**
-   * Loads the STAC catalog and fetches all item metadata.
-   *
-   * @returns Promise resolving to cached items
+   * Loads items from the pre-built index or localStorage cache.
    */
-  private async _loadCatalog(): Promise<CachedItem[]> {
-    // Check localStorage cache first
+  private _loadItems(): CachedItem[] {
+    // Check localStorage cache first (for rebuilt index)
     const cached = this._getFromCache();
     if (cached) {
       return cached;
     }
 
+    // Use pre-built index
+    const index = prebuiltIndex as PrebuiltIndex;
+    return index.items;
+  }
+
+  /**
+   * Fetches fresh data from the NOAA STAC catalog.
+   * This is a slow operation that fetches all items (1000+).
+   *
+   * @param onProgress - Optional progress callback
+   * @returns Promise resolving to fresh items
+   */
+  async rebuildIndex(onProgress?: RebuildProgressCallback): Promise<CachedItem[]> {
     // Fetch catalog.json
     const catalogResponse = await fetch(this._catalogUrl);
     if (!catalogResponse.ok) {
@@ -140,7 +163,9 @@ export class StacSearcher {
       (link) => link.rel === 'item' || link.rel === 'child'
     );
 
-    // Fetch items in batches to avoid overwhelming the server
+    const total = itemLinks.length;
+
+    // Fetch items in batches
     const items: CachedItem[] = [];
     const batchSize = 50;
 
@@ -148,7 +173,6 @@ export class StacSearcher {
       const batch = itemLinks.slice(i, i + batchSize);
       const batchPromises = batch.map(async (link) => {
         try {
-          // Resolve relative URLs
           const itemUrl = new URL(link.href, this._catalogUrl).href;
           const response = await fetch(itemUrl);
           if (!response.ok) {
@@ -158,14 +182,14 @@ export class StacSearcher {
 
           const item: StacItem = await response.json();
 
-          // Extract mission ID from item ID (e.g., "DigitalCoast_mission_13754" -> "13754")
+          // Extract mission ID
           const missionMatch = item.id.match(/(\d+)$/);
           const missionId = missionMatch ? missionMatch[1] : item.id;
 
           // Build EPT URL
           const eptUrl = `${this._eptBaseUrl}/${missionId}/ept.json`;
 
-          // Get bbox (handle both 4 and 6 element arrays)
+          // Get bbox
           const bbox: [number, number, number, number] =
             item.bbox.length === 6
               ? [item.bbox[0], item.bbox[1], item.bbox[3], item.bbox[4]]
@@ -186,10 +210,16 @@ export class StacSearcher {
 
       const batchResults = await Promise.all(batchPromises);
       items.push(...(batchResults.filter((item) => item !== null) as CachedItem[]));
+
+      // Report progress
+      if (onProgress) {
+        onProgress(Math.min(i + batchSize, total), total);
+      }
     }
 
     // Cache the result
     this._saveToCache(items);
+    this._items = items;
 
     return items;
   }
@@ -231,7 +261,7 @@ export class StacSearcher {
   }
 
   /**
-   * Clears the cached items.
+   * Clears the cached items (localStorage cache only, not pre-built index).
    */
   clearCache(): void {
     try {
@@ -243,22 +273,15 @@ export class StacSearcher {
   }
 
   /**
-   * Ensures items are loaded (with deduplication).
+   * Ensures items are loaded.
    */
-  private async _ensureLoaded(): Promise<CachedItem[]> {
+  private _ensureLoaded(): CachedItem[] {
     if (this._items) {
       return this._items;
     }
 
-    if (!this._loadPromise) {
-      this._loadPromise = this._loadCatalog().then((items) => {
-        this._items = items;
-        this._loadPromise = null;
-        return items;
-      });
-    }
-
-    return this._loadPromise;
+    this._items = this._loadItems();
+    return this._items;
   }
 
   /**
@@ -272,7 +295,7 @@ export class StacSearcher {
     bbox: [number, number, number, number],
     limit: number = 50
   ): Promise<StacSearchResponse> {
-    const items = await this._ensureLoaded();
+    const items = this._ensureLoaded();
 
     // Validate bbox
     const [west, south, east, north] = this._validateBbox(bbox);
@@ -331,7 +354,6 @@ export class StacSearcher {
 
   /**
    * Gets the EPT URL for a STAC item.
-   * Unlike Planetary Computer, NOAA EPT URLs are public and don't need signing.
    *
    * @param item - STAC item
    * @returns EPT URL
@@ -354,8 +376,6 @@ export class StacSearcher {
 
   /**
    * Gets all available items.
-   *
-   * @returns Promise resolving to all cached items
    */
   async getAllItems(): Promise<CachedItem[]> {
     return this._ensureLoaded();
@@ -365,7 +385,26 @@ export class StacSearcher {
    * Gets the total count of items.
    */
   async getCount(): Promise<number> {
-    const items = await this._ensureLoaded();
-    return items.length;
+    return this._ensureLoaded().length;
+  }
+
+  /**
+   * Gets information about the current index.
+   */
+  getIndexInfo(): { source: 'prebuilt' | 'cached'; itemCount: number; generatedAt?: string } {
+    const cached = this._getFromCache();
+    if (cached) {
+      return {
+        source: 'cached',
+        itemCount: cached.length,
+      };
+    }
+
+    const index = prebuiltIndex as PrebuiltIndex;
+    return {
+      source: 'prebuilt',
+      itemCount: index.itemCount,
+      generatedAt: index.generatedAt,
+    };
   }
 }

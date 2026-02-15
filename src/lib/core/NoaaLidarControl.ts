@@ -1156,13 +1156,12 @@ export class NoaaLidarControl implements IControl {
     toggleBtn.setAttribute('aria-label', this._options.title);
     toggleBtn.innerHTML = `
       <span class="noaa-lidar-control-icon">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#333" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <!-- Spiral wave curl -->
-          <path d="M3 12 C3 6 7 2 12 2 C17 2 19 5 19 8 C19 11 16 12 14 11 C12 10 12 8 14 7"/>
-          <!-- Wave lines below -->
-          <path d="M1 16 C3 14 5 14 7 16 C9 18 11 18 13 16 C15 14 17 14 19 16 C21 18 22 18 23 17"/>
-          <path d="M1 21 C3 19 5 19 7 21 C9 23 11 23 13 21 C15 19 17 19 19 21 C21 23 22 23 23 22"/>
-        </svg>
+        <img
+          class="noaa-lidar-control-icon-image"
+          src="https://cdn-icons-png.flaticon.com/512/2311/2311489.png"
+          alt=""
+          aria-hidden="true"
+        />
       </span>
     `;
     toggleBtn.addEventListener('click', () => this.toggle());
@@ -1243,6 +1242,10 @@ export class NoaaLidarControl implements IControl {
         onColorRangeChange: (config) => this.setColorRange(config),
         onShowMetadata: (itemId) => this.showMetadata(itemId),
         onCrossSectionPanel: () => this.getCrossSectionPanel(),
+        onRebuildIndex: async (onProgress) => {
+          await this._stacSearcher.rebuildIndex(onProgress);
+        },
+        getIndexInfo: () => this._stacSearcher.getIndexInfo(),
       },
       this._state
     );

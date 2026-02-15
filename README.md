@@ -1,6 +1,6 @@
 # maplibre-gl-noaa-lidar
 
-A MapLibre GL JS plugin for searching and visualizing NOAA Coastal LiDAR data from AWS Open Data.
+A MapLibre GL JS plugin for searching and visualizing [NOAA Coastal LiDAR data](https://coast.noaa.gov/dataviewer/#/lidar/search/) from [AWS Open Data](https://registry.opendata.aws/noaa-coastal-lidar/).
 
 [![npm version](https://img.shields.io/npm/v/maplibre-gl-noaa-lidar.svg)](https://www.npmjs.com/package/maplibre-gl-noaa-lidar)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
