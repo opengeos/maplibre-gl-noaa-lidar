@@ -38,10 +38,10 @@ const DEFAULT_OPTIONS: Required<FootprintLayerOptions> = {
 export class FootprintLayer {
   private _map: MapLibreMap;
   private _options: Required<FootprintLayerOptions>;
-  private _sourceId = 'usgs-lidar-footprints-source';
-  private _fillLayerId = 'usgs-lidar-footprints-fill';
-  private _outlineLayerId = 'usgs-lidar-footprints-outline';
-  private _selectedLayerId = 'usgs-lidar-footprints-selected';
+  private _sourceId = 'noaa-lidar-footprints-source';
+  private _fillLayerId = 'noaa-lidar-footprints-fill';
+  private _outlineLayerId = 'noaa-lidar-footprints-outline';
+  private _selectedLayerId = 'noaa-lidar-footprints-selected';
   private _items: UnifiedSearchItem[] = [];
   private _selectedIds: Set<string> = new Set();
   private _clickHandler?: (itemId: string) => void;
@@ -57,9 +57,11 @@ export class FootprintLayer {
     this._map = map;
     this._options = { ...DEFAULT_OPTIONS, ...options };
 
+    // Track if this is the first style load (to distinguish from style changes)
+    let isFirstStyleLoad = true;
+
     // Initialize layers when map style is ready
-    // Try multiple approaches to handle timing issues
-    const tryInit = () => {
+    const initLayers = () => {
       if (!this._layersInitialized) {
         this._initLayers();
         this._setupInteraction();
@@ -70,31 +72,28 @@ export class FootprintLayer {
       }
     };
 
-    if (this._map.isStyleLoaded()) {
-      tryInit();
-    } else {
-      this._map.once('style.load', tryInit);
-    }
-
-    // Fallback: also try on 'load' event if not yet initialized
-    this._map.once('load', () => {
-      if (!this._layersInitialized) {
-        tryInit();
-      }
-    });
-
-    // Handle style changes (e.g., when basemap is switched)
-    // Re-initialize layers after style change to ensure they exist
+    // Handle all style loads (initial and changes)
     this._map.on('style.load', () => {
-      // Reset flag since layers were removed during style change
-      this._layersInitialized = false;
-      this._initLayers();
-      this._setupInteraction();
-      // Re-render any existing items
-      if (this._items.length > 0) {
-        this._updateLayer();
+      if (isFirstStyleLoad) {
+        // First style load - just initialize
+        isFirstStyleLoad = false;
+        initLayers();
+      } else {
+        // Style change - layers were removed, need to re-add
+        this._layersInitialized = false;
+        this._initLayers();
+        this._setupInteraction();
+        if (this._items.length > 0) {
+          this._updateLayer();
+        }
       }
     });
+
+    // If style is already loaded, initialize immediately
+    if (this._map.isStyleLoaded()) {
+      isFirstStyleLoad = false;
+      initLayers();
+    }
   }
 
   /**
@@ -105,20 +104,32 @@ export class FootprintLayer {
   setItems(items: UnifiedSearchItem[]): void {
     this._items = items;
 
-    // Check if style is loaded
-    if (!this._map.isStyleLoaded()) {
-      // Style not loaded yet, items will be rendered when style loads
+    // Try to render immediately, or poll until ready
+    this._tryRender();
+  }
+
+  /**
+   * Attempts to render footprints, polling if style isn't ready yet.
+   */
+  private _tryRender(attempts: number = 0): void {
+    // If layers are initialized, update immediately
+    if (this._layersInitialized && this._map.getSource(this._sourceId)) {
+      this._updateLayer();
       return;
     }
 
-    // If layers not initialized yet, or source was removed (e.g., style change), re-initialize
-    if (!this._layersInitialized || !this._map.getSource(this._sourceId)) {
-      this._layersInitialized = false;
+    // If style is loaded, initialize layers and update
+    if (this._map.isStyleLoaded()) {
       this._initLayers();
       this._setupInteraction();
+      this._updateLayer();
+      return;
     }
 
-    this._updateLayer();
+    // Style not loaded yet - poll until ready (max ~2 seconds)
+    if (attempts < 120) {
+      requestAnimationFrame(() => this._tryRender(attempts + 1));
+    }
   }
 
   /**

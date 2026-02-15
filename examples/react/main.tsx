@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import maplibregl, { Map } from 'maplibre-gl';
-import { UsgsLidarControlReact, useUsgsLidarState } from '../../src/react';
+import { NoaaLidarControlReact, useNoaaLidarState } from '../../src/react';
 import { LayerControl } from 'maplibre-gl-layer-control';
 import type { StacItem } from '../../src/index';
 import '../../src/index.css';
@@ -15,18 +15,18 @@ import 'maplibre-gl-layer-control/style.css';
 function App() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<Map | null>(null);
-  const { state, toggle } = useUsgsLidarState({ collapsed: false });
+  const { state, toggle } = useNoaaLidarState({ collapsed: false });
   const [searchResults, setSearchResults] = useState<StacItem[]>([]);
 
-  // Initialize the map
+  // Initialize the map centered on Florida coast (NOAA coastal LiDAR coverage)
   useEffect(() => {
     if (!mapContainer.current) return;
 
     const mapInstance = new maplibregl.Map({
       container: mapContainer.current,
       style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-      center: [-104.9847, 39.7392],
-      zoom: 14,
+      center: [-80.2, 25.8],
+      zoom: 10,
       maxPitch: 85,
     });
 
@@ -69,46 +69,15 @@ function App() {
         firstSymbolId // Insert before first symbol layer
       );
 
-      // Add 3DEP Elevation Index WMS layer (Lidar Point Cloud coverage)
-      mapInstance.addSource('3dep-index', {
-        type: 'raster',
-        tiles: [
-          'https://index.nationalmap.gov/arcgis/services/3DEPElevationIndex/MapServer/WMSServer?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image/png&TRANSPARENT=true&LAYERS=23&SRS=EPSG:3857&STYLES=&WIDTH=256&HEIGHT=256&BBOX={bbox-epsg-3857}',
-        ],
-        tileSize: 256,
-        attribution: 'USGS 3DEP',
-      });
-
-      mapInstance.addLayer(
-        {
-          id: '3dep-index-layer',
-          type: 'raster',
-          source: '3dep-index',
-          maxzoom: 10, // Hide when zoom > 10
-          paint: {
-            'raster-opacity': 0.7,
-          },
-          layout: {
-            visibility: 'none', // Hidden by default
-          },
-        },
-        firstSymbolId // Insert before first symbol layer (above satellite)
-      );
-
       // Add layer control for basemap layers
       const layerControl = new LayerControl({
         collapsed: true,
-        layers: ['google-satellite-layer', '3dep-index-layer'],
+        layers: ['google-satellite-layer'],
         layerStates: {
           'google-satellite-layer': {
             visible: false,
             opacity: 1,
             name: 'Google Satellite',
-          },
-          '3dep-index-layer': {
-            visible: false,
-            opacity: 0.7,
-            name: '3DEP LiDAR Index',
           },
         },
       });
@@ -190,17 +159,18 @@ function App() {
           zIndex: 1,
         }}
       >
-        <h3 style={{ margin: '0 0 8px 0', fontSize: 14 }}>USGS 3DEP LiDAR Viewer (React)</h3>
+        <h3 style={{ margin: '0 0 8px 0', fontSize: 14 }}>NOAA Coastal LiDAR Viewer (React)</h3>
         <p style={{ margin: 0, color: '#666', lineHeight: 1.4 }}>
-          Click the LiDAR control button to search for and visualize USGS 3DEP LiDAR data.
+          Click the LiDAR control button to search for and visualize NOAA Coastal LiDAR data from
+          AWS Open Data.
         </p>
       </div>
 
-      {/* USGS LiDAR control */}
+      {/* NOAA LiDAR control */}
       {map && (
-        <UsgsLidarControlReact
+        <NoaaLidarControlReact
           map={map}
-          title="USGS 3DEP LiDAR"
+          title="NOAA Coastal LiDAR"
           collapsed={state.collapsed}
           maxResults={50}
           showFootprints={true}
@@ -210,7 +180,6 @@ function App() {
           lidarControlOptions={{
             pointSize: 2,
             colorScheme: 'elevation',
-            copcLoadingMode: 'dynamic',
           }}
         />
       )}

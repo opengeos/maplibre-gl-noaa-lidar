@@ -1,1 +1,1 @@
-export { UsgsLidarLayerAdapter } from './UsgsLidarLayerAdapter';
+export { NoaaLidarLayerAdapter } from './NoaaLidarLayerAdapter';

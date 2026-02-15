@@ -21,8 +21,8 @@ RUN npm run build && npm run build:examples
 # Production stage
 FROM nginx:alpine
 
-# Copy built examples to nginx (served under /maplibre-gl-usgs-lidar/ to match Vite base path)
-COPY --from=builder /app/dist-examples /usr/share/nginx/html/maplibre-gl-usgs-lidar
+# Copy built examples to nginx (served under /maplibre-gl-noaa-lidar/ to match Vite base path)
+COPY --from=builder /app/dist-examples /usr/share/nginx/html/maplibre-gl-noaa-lidar
 
 # Copy custom nginx config
 RUN echo 'server { \
@@ -31,12 +31,12 @@ RUN echo 'server { \
     root /usr/share/nginx/html; \
     index index.html; \
     \
-    location /maplibre-gl-usgs-lidar/ { \
-        try_files $uri $uri/ /maplibre-gl-usgs-lidar/index.html; \
+    location /maplibre-gl-noaa-lidar/ { \
+        try_files $uri $uri/ /maplibre-gl-noaa-lidar/index.html; \
     } \
     \
     location = / { \
-        return 302 /maplibre-gl-usgs-lidar/; \
+        return 302 /maplibre-gl-noaa-lidar/; \
     } \
 }' > /etc/nginx/conf.d/default.conf
 
@@ -46,13 +46,13 @@ EXPOSE 80
 RUN printf '#!/bin/sh\n\
 echo ""\n\
 echo "======================================================"\n\
-echo "  MapLibre GL USGS LiDAR Examples"\n\
+echo "  MapLibre GL NOAA Coastal LiDAR Examples"\n\
 echo "======================================================"\n\
 echo ""\n\
 echo "  Server running on port 80"\n\
 echo ""\n\
 echo "  If you ran: docker run -p 8080:80 ..."\n\
-echo "  Open: http://localhost:8080/maplibre-gl-usgs-lidar/"\n\
+echo "  Open: http://localhost:8080/maplibre-gl-noaa-lidar/"\n\
 echo ""\n\
 echo "======================================================"\n\
 echo ""\n\

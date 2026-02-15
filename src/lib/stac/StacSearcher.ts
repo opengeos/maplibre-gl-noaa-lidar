@@ -1,69 +1,98 @@
-import type { StacSearchParams, StacSearchResponse, StacItem } from '../core/types';
+import type { StacSearchResponse, StacItem, CacheEntry } from '../core/types';
 
-const PLANETARY_COMPUTER_STAC_API = 'https://planetarycomputer.microsoft.com/api/stac/v1';
-const PLANETARY_COMPUTER_SAS_API = 'https://planetarycomputer.microsoft.com/api/sas/v1';
-const COLLECTION_ID = '3dep-lidar-copc';
+const NOAA_STAC_CATALOG =
+  'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/entwine/stac/catalog.json';
+const EPT_BASE_URL = 'https://noaa-nos-coastal-lidar-pds.s3.amazonaws.com/entwine/geoid18';
+const CACHE_KEY = 'noaa-lidar-stac-items';
+const DEFAULT_CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 /**
- * Client for searching USGS 3DEP LiDAR COPC data from Microsoft Planetary Computer.
+ * NOAA STAC Catalog link structure.
+ */
+interface CatalogLink {
+  rel: string;
+  href: string;
+  type?: string;
+  title?: string;
+}
+
+/**
+ * NOAA STAC Catalog structure.
+ */
+interface StacCatalog {
+  type: string;
+  id: string;
+  stac_version: string;
+  description: string;
+  links: CatalogLink[];
+}
+
+/**
+ * Cached item index entry.
+ */
+interface CachedItem {
+  id: string;
+  title?: string;
+  bbox: [number, number, number, number];
+  eptUrl: string;
+  pointCount?: number;
+}
+
+/**
+ * Client for searching NOAA Coastal LiDAR EPT data from AWS Open Data.
+ *
+ * The NOAA STAC catalog has a flat structure with direct item links.
+ * This client fetches and caches the item index for efficient spatial queries.
  *
  * @example
  * ```typescript
  * const searcher = new StacSearcher();
- * const results = await searcher.search({
- *   bbox: [-123.1, 44.0, -123.0, 44.1],
- *   limit: 25
- * });
+ * const results = await searcher.searchByExtent(
+ *   [-80.0, 32.0, -79.0, 33.0],
+ *   25
+ * );
  * ```
  */
 export class StacSearcher {
-  private _stacUrl: string;
-  private _sasUrl: string;
-  private _collection: string;
-  private _cachedToken: { token: string; expiry: Date } | null = null;
+  private _catalogUrl: string;
+  private _eptBaseUrl: string;
+  private _cacheDuration: number;
+  private _items: CachedItem[] | null = null;
+  private _loadPromise: Promise<CachedItem[]> | null = null;
 
   /**
    * Creates a new StacSearcher instance.
    *
-   * @param stacUrl - STAC API base URL (defaults to Planetary Computer)
-   * @param sasUrl - SAS token API base URL (defaults to Planetary Computer)
-   * @param collection - Collection ID (defaults to 3dep-lidar-copc)
+   * @param catalogUrl - URL to the NOAA STAC catalog.json
+   * @param eptBaseUrl - Base URL for EPT data
+   * @param cacheDuration - Cache duration in milliseconds
    */
   constructor(
-    stacUrl: string = PLANETARY_COMPUTER_STAC_API,
-    sasUrl: string = PLANETARY_COMPUTER_SAS_API,
-    collection: string = COLLECTION_ID
+    catalogUrl: string = NOAA_STAC_CATALOG,
+    eptBaseUrl: string = EPT_BASE_URL,
+    cacheDuration: number = DEFAULT_CACHE_DURATION
   ) {
-    this._stacUrl = stacUrl;
-    this._sasUrl = sasUrl;
-    this._collection = collection;
+    this._catalogUrl = catalogUrl;
+    this._eptBaseUrl = eptBaseUrl;
+    this._cacheDuration = cacheDuration;
   }
 
   /**
-   * Gets the STAC API base URL.
+   * Gets the STAC catalog URL.
    */
   get baseUrl(): string {
-    return this._stacUrl;
+    return this._catalogUrl;
   }
 
   /**
-   * Gets the SAS API base URL.
+   * Gets the EPT base URL.
    */
-  get sasUrl(): string {
-    return this._sasUrl;
-  }
-
-  /**
-   * Gets the collection ID.
-   */
-  get collection(): string {
-    return this._collection;
+  get eptBaseUrl(): string {
+    return this._eptBaseUrl;
   }
 
   /**
    * Validates and clamps a bounding box to valid geographic coordinates.
-   * Longitude: -180 to 180, Latitude: -90 to 90
-   * Also handles NaN and Infinity values.
    *
    * @param bbox - Bounding box [west, south, east, north]
    * @returns Validated and clamped bounding box
@@ -71,7 +100,6 @@ export class StacSearcher {
   private _validateBbox(
     bbox: [number, number, number, number]
   ): [number, number, number, number] {
-    // Replace NaN/Infinity with valid defaults
     const safeValue = (val: number, defaultVal: number, min: number, max: number): number => {
       if (!Number.isFinite(val)) {
         return defaultVal;
@@ -88,185 +116,256 @@ export class StacSearcher {
   }
 
   /**
-   * Searches the STAC API for items matching the given parameters.
+   * Loads the STAC catalog and fetches all item metadata.
    *
-   * @param params - Search parameters (bbox, datetime, limit)
-   * @returns Promise resolving to search results
+   * @returns Promise resolving to cached items
    */
-  async search(params: StacSearchParams): Promise<StacSearchResponse> {
-    const searchUrl = `${this._stacUrl}/search`;
-
-    // Validate and clamp bbox to valid geographic coordinates to prevent 400 errors
-    const validatedParams = { ...params };
-    if (validatedParams.bbox) {
-      validatedParams.bbox = this._validateBbox(validatedParams.bbox);
+  private async _loadCatalog(): Promise<CachedItem[]> {
+    // Check localStorage cache first
+    const cached = this._getFromCache();
+    if (cached) {
+      return cached;
     }
 
-    // Planetary Computer API has a max limit of 1000
-    if (validatedParams.limit !== undefined && validatedParams.limit > 1000) {
-      validatedParams.limit = 1000;
+    // Fetch catalog.json
+    const catalogResponse = await fetch(this._catalogUrl);
+    if (!catalogResponse.ok) {
+      throw new Error(`Failed to fetch NOAA STAC catalog: ${catalogResponse.status} ${catalogResponse.statusText}`);
     }
 
-    const body = {
-      collections: [this._collection],
-      ...validatedParams,
-    };
+    const catalog: StacCatalog = await catalogResponse.json();
 
-    const response = await fetch(searchUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
+    // Get all item links
+    const itemLinks = catalog.links.filter(
+      (link) => link.rel === 'item' || link.rel === 'child'
+    );
 
-    if (!response.ok) {
-      // Try to get more detailed error info
-      let errorDetail = '';
-      try {
-        const errorBody = await response.text();
-        errorDetail = ` - ${errorBody}`;
-      } catch {
-        // Ignore if we can't read the error body
-      }
-      throw new Error(`STAC search failed: ${response.status} ${response.statusText}${errorDetail}`);
+    // Fetch items in batches to avoid overwhelming the server
+    const items: CachedItem[] = [];
+    const batchSize = 50;
+
+    for (let i = 0; i < itemLinks.length; i += batchSize) {
+      const batch = itemLinks.slice(i, i + batchSize);
+      const batchPromises = batch.map(async (link) => {
+        try {
+          // Resolve relative URLs
+          const itemUrl = new URL(link.href, this._catalogUrl).href;
+          const response = await fetch(itemUrl);
+          if (!response.ok) {
+            console.warn(`Failed to fetch item: ${itemUrl}`);
+            return null;
+          }
+
+          const item: StacItem = await response.json();
+
+          // Extract mission ID from item ID (e.g., "DigitalCoast_mission_13754" -> "13754")
+          const missionMatch = item.id.match(/(\d+)$/);
+          const missionId = missionMatch ? missionMatch[1] : item.id;
+
+          // Build EPT URL
+          const eptUrl = `${this._eptBaseUrl}/${missionId}/ept.json`;
+
+          // Get bbox (handle both 4 and 6 element arrays)
+          const bbox: [number, number, number, number] =
+            item.bbox.length === 6
+              ? [item.bbox[0], item.bbox[1], item.bbox[3], item.bbox[4]]
+              : (item.bbox as [number, number, number, number]);
+
+          return {
+            id: item.id,
+            title: item.properties?.title || item.id,
+            bbox,
+            eptUrl,
+            pointCount: item.properties?.['pc:count'] || item.properties?.['pointcloud:count'],
+          };
+        } catch (error) {
+          console.warn(`Error processing item ${link.href}:`, error);
+          return null;
+        }
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+      items.push(...(batchResults.filter((item) => item !== null) as CachedItem[]));
     }
 
-    return response.json();
+    // Cache the result
+    this._saveToCache(items);
+
+    return items;
   }
 
   /**
-   * Searches using bounding box coordinates.
+   * Gets cached items from localStorage.
+   */
+  private _getFromCache(): CachedItem[] | null {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (!cached) return null;
+
+      const entry: CacheEntry<CachedItem[]> = JSON.parse(cached);
+      if (Date.now() > entry.expiresAt) {
+        localStorage.removeItem(CACHE_KEY);
+        return null;
+      }
+
+      return entry.data;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Saves items to localStorage cache.
+   */
+  private _saveToCache(items: CachedItem[]): void {
+    try {
+      const entry: CacheEntry<CachedItem[]> = {
+        data: items,
+        timestamp: Date.now(),
+        expiresAt: Date.now() + this._cacheDuration,
+      };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(entry));
+    } catch (error) {
+      console.warn('Failed to cache NOAA STAC items:', error);
+    }
+  }
+
+  /**
+   * Clears the cached items.
+   */
+  clearCache(): void {
+    try {
+      localStorage.removeItem(CACHE_KEY);
+    } catch {
+      // Ignore localStorage errors
+    }
+    this._items = null;
+  }
+
+  /**
+   * Ensures items are loaded (with deduplication).
+   */
+  private async _ensureLoaded(): Promise<CachedItem[]> {
+    if (this._items) {
+      return this._items;
+    }
+
+    if (!this._loadPromise) {
+      this._loadPromise = this._loadCatalog().then((items) => {
+        this._items = items;
+        this._loadPromise = null;
+        return items;
+      });
+    }
+
+    return this._loadPromise;
+  }
+
+  /**
+   * Searches by bounding box.
    *
-   * @param bounds - Map bounds [west, south, east, north]
+   * @param bbox - Bounding box [west, south, east, north]
    * @param limit - Maximum results (default: 50)
    * @returns Promise resolving to search results
    */
   async searchByExtent(
-    bounds: [number, number, number, number],
+    bbox: [number, number, number, number],
     limit: number = 50
   ): Promise<StacSearchResponse> {
-    return this.search({ bbox: bounds, limit });
-  }
+    const items = await this._ensureLoaded();
 
-  /**
-   * Gets a SAS token for the collection.
-   * Caches the token and refreshes when expired.
-   *
-   * @returns Promise resolving to the SAS token
-   */
-  private async _getSasToken(): Promise<string> {
-    // Check if we have a valid cached token (with 5 minute buffer)
-    if (this._cachedToken) {
-      const now = new Date();
-      const bufferMs = 5 * 60 * 1000; // 5 minutes
-      if (this._cachedToken.expiry.getTime() - bufferMs > now.getTime()) {
-        return this._cachedToken.token;
-      }
-    }
+    // Validate bbox
+    const [west, south, east, north] = this._validateBbox(bbox);
 
-    // Fetch a new token
-    const tokenUrl = `${this._sasUrl}/token/${this._collection}`;
-    const response = await fetch(tokenUrl);
+    // Filter items that intersect with bbox
+    const matching = items.filter((item) => {
+      const [iWest, iSouth, iEast, iNorth] = item.bbox;
+      // Check for bbox intersection
+      return !(iEast < west || iWest > east || iNorth < south || iSouth > north);
+    });
 
-    if (!response.ok) {
-      throw new Error(`Failed to get SAS token: ${response.status} ${response.statusText}`);
-    }
+    // Sort by point count (descending) and limit
+    const sorted = matching
+      .sort((a, b) => (b.pointCount ?? 0) - (a.pointCount ?? 0))
+      .slice(0, limit);
 
-    const data = await response.json();
-    this._cachedToken = {
-      token: data.token,
-      expiry: new Date(data['msft:expiry']),
+    // Convert to StacItem format for compatibility
+    const features: StacItem[] = sorted.map((item) => ({
+      id: item.id,
+      type: 'Feature',
+      stac_version: '1.0.0',
+      geometry: {
+        type: 'Polygon',
+        coordinates: [[
+          [item.bbox[0], item.bbox[1]],
+          [item.bbox[2], item.bbox[1]],
+          [item.bbox[2], item.bbox[3]],
+          [item.bbox[0], item.bbox[3]],
+          [item.bbox[0], item.bbox[1]],
+        ]],
+      },
+      bbox: item.bbox,
+      properties: {
+        datetime: null,
+        title: item.title,
+        'pc:count': item.pointCount,
+      },
+      links: [],
+      assets: {
+        data: {
+          href: item.eptUrl,
+          type: 'application/json',
+          title: 'EPT Index',
+        },
+      },
+      collection: 'noaa-coastal-lidar',
+    }));
+
+    return {
+      type: 'FeatureCollection',
+      features,
+      numberMatched: matching.length,
+      numberReturned: features.length,
     };
-
-    return this._cachedToken.token;
   }
 
   /**
-   * Gets the COPC asset URL from a STAC item.
-   * Signs the URL with a SAS token for Planetary Computer Azure blob access.
+   * Gets the EPT URL for a STAC item.
+   * Unlike Planetary Computer, NOAA EPT URLs are public and don't need signing.
    *
    * @param item - STAC item
-   * @returns Signed COPC URL
+   * @returns EPT URL
    */
-  async getCopcUrl(item: StacItem): Promise<string> {
+  async getEptUrl(item: StacItem): Promise<string> {
     const asset = item.assets.data;
     if (!asset) {
       throw new Error(`No data asset found for item ${item.id}`);
     }
-
-    try {
-      // Get SAS token and append to URL
-      const token = await this._getSasToken();
-      const separator = asset.href.includes('?') ? '&' : '?';
-      return `${asset.href}${separator}${token}`;
-    } catch (error) {
-      // Fall back to unsigned URL if SAS token fetch fails
-      console.error('Failed to get SAS token, returning unsigned URL:', error);
-      return asset.href;
-    }
+    return asset.href;
   }
 
   /**
-   * Fetches the next page of results using the 'next' link.
-   *
-   * @param response - Previous search response
-   * @returns Promise resolving to next page of results or null if no more pages
+   * Alias for getEptUrl for backward compatibility.
+   * @deprecated Use getEptUrl instead
    */
-  async fetchNextPage(response: StacSearchResponse): Promise<StacSearchResponse | null> {
-    const nextLink = response.links?.find((link) => link.rel === 'next');
-    if (!nextLink) {
-      return null;
-    }
-
-    const res = await fetch(nextLink.href, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!res.ok) {
-      throw new Error(`Failed to fetch next page: ${res.status}`);
-    }
-
-    return res.json();
+  async getCopcUrl(item: StacItem): Promise<string> {
+    return this.getEptUrl(item);
   }
 
   /**
-   * Fetches all results by following pagination links.
-   * Use with caution as this may return a large number of items.
+   * Gets all available items.
    *
-   * @param params - Search parameters
-   * @param maxItems - Maximum total items to fetch (default: 500)
-   * @returns Promise resolving to all items
+   * @returns Promise resolving to all cached items
    */
-  async searchAll(params: StacSearchParams, maxItems: number = 500): Promise<StacItem[]> {
-    const allItems: StacItem[] = [];
-    let response = await this.search(params);
-    allItems.push(...response.features);
-
-    while (allItems.length < maxItems) {
-      const nextResponse = await this.fetchNextPage(response);
-      if (!nextResponse || nextResponse.features.length === 0) {
-        break;
-      }
-      allItems.push(...nextResponse.features);
-      response = nextResponse;
-    }
-
-    return allItems.slice(0, maxItems);
+  async getAllItems(): Promise<CachedItem[]> {
+    return this._ensureLoaded();
   }
 
   /**
-   * Gets the total number of items matching the search parameters.
-   * This performs a search with limit=0 to get just the count.
-   *
-   * @param params - Search parameters
-   * @returns Promise resolving to the total count
+   * Gets the total count of items.
    */
-  async getCount(params: Omit<StacSearchParams, 'limit'>): Promise<number> {
-    const response = await this.search({ ...params, limit: 0 });
-    return response.numberMatched ?? response.context?.matched ?? 0;
+  async getCount(): Promise<number> {
+    const items = await this._ensureLoaded();
+    return items.length;
   }
 }

@@ -4,7 +4,7 @@ import { getBboxFromGeometry, formatPointCount } from './helpers';
 /**
  * Converts a STAC item to a unified search item.
  *
- * @param item - STAC item from Planetary Computer
+ * @param item - STAC item from NOAA Coastal LiDAR catalog
  * @returns Unified search item
  */
 export function stacToUnified(item: StacItem): UnifiedSearchItem {
@@ -19,8 +19,10 @@ export function stacToUnified(item: StacItem): UnifiedSearchItem {
     (item.properties['pc:count'] as number | undefined) ??
     (item.properties['pointcloud:count'] as number | undefined);
 
-  // Clean up item name
-  const name = item.id.replace(/^USGS_LPC_/, '').replace(/^3DEP_/, '');
+  // Clean up item name - remove NOAA prefixes
+  const name =
+    (item.properties.title as string | undefined) ??
+    item.id.replace(/^DigitalCoast_mission_/, 'Mission ');
 
   return {
     id: item.id,
@@ -32,7 +34,7 @@ export function stacToUnified(item: StacItem): UnifiedSearchItem {
       pointCount,
       datetime: item.properties.datetime,
     },
-    sourceType: 'copc',
+    sourceType: 'ept', // NOAA data is always EPT
     originalItem: item,
   };
 }
@@ -100,8 +102,8 @@ export function getUnifiedItemMetadata(item: UnifiedSearchItem): string {
     }
   }
 
-  // Add source indicator
-  parts.push(item.sourceType === 'copc' ? 'COPC' : 'EPT');
+  // Always EPT for NOAA data
+  parts.push('EPT');
 
   return parts.join(' \u2022 '); // Unicode bullet
 }

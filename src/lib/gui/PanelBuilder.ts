@@ -1,4 +1,4 @@
-import type { UnifiedSearchItem, UsgsLidarState, DataSourceType } from '../core/types';
+import type { UnifiedSearchItem, NoaaLidarState } from '../core/types';
 import { formatPointCount, getItemShortName, formatBbox, getUnifiedItemMetadata } from '../utils';
 import {
   getClassificationName,
@@ -63,7 +63,6 @@ export interface PanelCallbacks {
   onClassificationToggle: (classificationCode: number, visible: boolean) => void;
   onClassificationShowAll: () => void;
   onClassificationHideAll: () => void;
-  onDataSourceChange: (source: DataSourceType) => void;
   onColormapChange: (colormap: ColormapName) => void;
   onColorRangeChange: (config: ColorRangeConfig) => void;
   onShowMetadata?: (itemId: string) => void;
@@ -75,7 +74,7 @@ export interface PanelCallbacks {
  */
 export class PanelBuilder {
   private _callbacks: PanelCallbacks;
-  private _state: UsgsLidarState;
+  private _state: NoaaLidarState;
   private _container: HTMLElement | null = null;
 
   // Section references for updates
@@ -123,7 +122,7 @@ export class PanelBuilder {
   private _dataBounds: { min: number; max: number } = { min: 0, max: 100 };
   private _computedBounds: { min: number; max: number } | null = null;
 
-  constructor(callbacks: PanelCallbacks, state: UsgsLidarState) {
+  constructor(callbacks: PanelCallbacks, state: NoaaLidarState) {
     this._callbacks = callbacks;
     this._state = state;
   }
@@ -133,7 +132,7 @@ export class PanelBuilder {
    */
   build(): HTMLElement {
     this._container = document.createElement('div');
-    this._container.className = 'usgs-lidar-panel-content';
+    this._container.className = 'noaa-lidar-panel-content';
 
     // Search section
     this._searchSection = this._buildSearchSection();
@@ -163,7 +162,7 @@ export class PanelBuilder {
   /**
    * Updates the panel with new state.
    */
-  updateState(state: UsgsLidarState): void {
+  updateState(state: NoaaLidarState): void {
     this._state = state;
 
     // Update search section
@@ -189,71 +188,29 @@ export class PanelBuilder {
 
   private _buildSearchSection(): HTMLElement {
     const section = document.createElement('div');
-    section.className = 'usgs-lidar-section usgs-lidar-search-section';
+    section.className = 'noaa-lidar-section noaa-lidar-search-section';
 
     const header = document.createElement('div');
-    header.className = 'usgs-lidar-section-header';
+    header.className = 'noaa-lidar-section-header';
     header.textContent = 'Search';
     section.appendChild(header);
 
     const content = document.createElement('div');
-    content.className = 'usgs-lidar-section-content';
-
-    // Data source toggle
-    const sourceRow = document.createElement('div');
-    sourceRow.className = 'usgs-lidar-source-toggle';
-
-    const copcLabel = document.createElement('label');
-    copcLabel.className = 'usgs-lidar-source-option';
-    const copcRadio = document.createElement('input');
-    copcRadio.type = 'radio';
-    copcRadio.name = 'usgs-lidar-source';
-    copcRadio.value = 'copc';
-    copcRadio.checked = this._state.dataSource === 'copc';
-    copcRadio.id = 'usgs-lidar-source-copc';
-    copcLabel.appendChild(copcRadio);
-    copcLabel.appendChild(document.createTextNode(' COPC (Planetary Computer)'));
-
-    const eptLabel = document.createElement('label');
-    eptLabel.className = 'usgs-lidar-source-option';
-    const eptRadio = document.createElement('input');
-    eptRadio.type = 'radio';
-    eptRadio.name = 'usgs-lidar-source';
-    eptRadio.value = 'ept';
-    eptRadio.checked = this._state.dataSource === 'ept';
-    eptRadio.id = 'usgs-lidar-source-ept';
-    eptLabel.appendChild(eptRadio);
-    eptLabel.appendChild(document.createTextNode(' EPT (AWS Open Data)'));
-
-    sourceRow.appendChild(copcLabel);
-    sourceRow.appendChild(eptLabel);
-    content.appendChild(sourceRow);
-
-    // Event listeners for data source toggle
-    copcRadio.addEventListener('change', () => {
-      if (copcRadio.checked) {
-        this._callbacks.onDataSourceChange('copc');
-      }
-    });
-    eptRadio.addEventListener('change', () => {
-      if (eptRadio.checked) {
-        this._callbacks.onDataSourceChange('ept');
-      }
-    });
+    content.className = 'noaa-lidar-section-content';
 
     // Search buttons row
     const buttonsRow = document.createElement('div');
-    buttonsRow.className = 'usgs-lidar-button-row';
+    buttonsRow.className = 'noaa-lidar-button-row';
 
     const extentBtn = document.createElement('button');
-    extentBtn.className = 'usgs-lidar-btn usgs-lidar-btn-primary';
+    extentBtn.className = 'noaa-lidar-btn noaa-lidar-btn-primary';
     extentBtn.textContent = 'Search Map Extent';
     extentBtn.addEventListener('click', () => this._callbacks.onSearchByExtent());
     buttonsRow.appendChild(extentBtn);
 
     const drawBtn = document.createElement('button');
-    drawBtn.className = 'usgs-lidar-btn usgs-lidar-btn-secondary';
-    drawBtn.id = 'usgs-lidar-draw-btn';
+    drawBtn.className = 'noaa-lidar-btn noaa-lidar-btn-secondary';
+    drawBtn.id = 'noaa-lidar-draw-btn';
     drawBtn.textContent = 'Draw Rectangle';
     drawBtn.addEventListener('click', () => {
       if (this._state.isDrawing) {
@@ -268,25 +225,25 @@ export class PanelBuilder {
 
     // Drawn bbox info
     const bboxInfo = document.createElement('div');
-    bboxInfo.className = 'usgs-lidar-bbox-info';
-    bboxInfo.id = 'usgs-lidar-bbox-info';
+    bboxInfo.className = 'noaa-lidar-bbox-info';
+    bboxInfo.id = 'noaa-lidar-bbox-info';
     bboxInfo.style.display = 'none';
     content.appendChild(bboxInfo);
 
     // Drawn bbox actions
     const drawnActions = document.createElement('div');
-    drawnActions.className = 'usgs-lidar-button-row';
-    drawnActions.id = 'usgs-lidar-drawn-actions';
+    drawnActions.className = 'noaa-lidar-button-row';
+    drawnActions.id = 'noaa-lidar-drawn-actions';
     drawnActions.style.display = 'none';
 
     const searchDrawnBtn = document.createElement('button');
-    searchDrawnBtn.className = 'usgs-lidar-btn usgs-lidar-btn-primary';
+    searchDrawnBtn.className = 'noaa-lidar-btn noaa-lidar-btn-primary';
     searchDrawnBtn.textContent = 'Search Drawn Area';
     searchDrawnBtn.addEventListener('click', () => this._callbacks.onSearchByDrawn());
     drawnActions.appendChild(searchDrawnBtn);
 
     const clearDrawnBtn = document.createElement('button');
-    clearDrawnBtn.className = 'usgs-lidar-btn usgs-lidar-btn-danger';
+    clearDrawnBtn.className = 'noaa-lidar-btn noaa-lidar-btn-danger';
     clearDrawnBtn.textContent = 'Clear';
     clearDrawnBtn.addEventListener('click', () => this._callbacks.onClearDrawn());
     drawnActions.appendChild(clearDrawnBtn);
@@ -295,16 +252,16 @@ export class PanelBuilder {
 
     // Loading indicator
     const loading = document.createElement('div');
-    loading.className = 'usgs-lidar-loading';
-    loading.id = 'usgs-lidar-search-loading';
+    loading.className = 'noaa-lidar-loading';
+    loading.id = 'noaa-lidar-search-loading';
     loading.style.display = 'none';
-    loading.innerHTML = '<span class="usgs-lidar-spinner"></span> Searching...';
+    loading.innerHTML = '<span class="noaa-lidar-spinner"></span> Searching...';
     content.appendChild(loading);
 
     // Error message
     const error = document.createElement('div');
-    error.className = 'usgs-lidar-error';
-    error.id = 'usgs-lidar-search-error';
+    error.className = 'noaa-lidar-error';
+    error.id = 'noaa-lidar-search-error';
     error.style.display = 'none';
     content.appendChild(error);
 
@@ -313,26 +270,18 @@ export class PanelBuilder {
   }
 
   private _updateSearchSection(): void {
-    // Update data source toggle
-    const copcRadio = document.getElementById('usgs-lidar-source-copc') as HTMLInputElement;
-    const eptRadio = document.getElementById('usgs-lidar-source-ept') as HTMLInputElement;
-    if (copcRadio && eptRadio) {
-      copcRadio.checked = this._state.dataSource === 'copc';
-      eptRadio.checked = this._state.dataSource === 'ept';
-    }
-
     // Update draw button
-    const drawBtn = document.getElementById('usgs-lidar-draw-btn');
+    const drawBtn = document.getElementById('noaa-lidar-draw-btn');
     if (drawBtn) {
       drawBtn.textContent = this._state.isDrawing ? 'Cancel Drawing' : 'Draw Rectangle';
       drawBtn.className = this._state.isDrawing
-        ? 'usgs-lidar-btn usgs-lidar-btn-danger'
-        : 'usgs-lidar-btn usgs-lidar-btn-secondary';
+        ? 'noaa-lidar-btn noaa-lidar-btn-danger'
+        : 'noaa-lidar-btn noaa-lidar-btn-secondary';
     }
 
     // Update bbox info
-    const bboxInfo = document.getElementById('usgs-lidar-bbox-info');
-    const drawnActions = document.getElementById('usgs-lidar-drawn-actions');
+    const bboxInfo = document.getElementById('noaa-lidar-bbox-info');
+    const drawnActions = document.getElementById('noaa-lidar-drawn-actions');
     if (bboxInfo && drawnActions) {
       if (this._state.drawnBbox) {
         bboxInfo.textContent = `Drawn area: ${formatBbox(this._state.drawnBbox)}`;
@@ -345,13 +294,13 @@ export class PanelBuilder {
     }
 
     // Update loading indicator
-    const loading = document.getElementById('usgs-lidar-search-loading');
+    const loading = document.getElementById('noaa-lidar-search-loading');
     if (loading) {
       loading.style.display = this._state.isSearching ? 'flex' : 'none';
     }
 
     // Update error message
-    const error = document.getElementById('usgs-lidar-search-error');
+    const error = document.getElementById('noaa-lidar-search-error');
     if (error) {
       if (this._state.searchError) {
         error.textContent = this._state.searchError;
@@ -364,37 +313,37 @@ export class PanelBuilder {
 
   private _buildResultsSection(): HTMLElement {
     const section = document.createElement('div');
-    section.className = 'usgs-lidar-section usgs-lidar-results-section';
+    section.className = 'noaa-lidar-section noaa-lidar-results-section';
 
     const header = document.createElement('div');
-    header.className = 'usgs-lidar-section-header';
-    header.innerHTML = 'Results <span id="usgs-lidar-results-count"></span>';
+    header.className = 'noaa-lidar-section-header';
+    header.innerHTML = 'Results <span id="noaa-lidar-results-count"></span>';
     section.appendChild(header);
 
     const content = document.createElement('div');
-    content.className = 'usgs-lidar-section-content';
+    content.className = 'noaa-lidar-section-content';
 
     // Results list
     const list = document.createElement('div');
-    list.className = 'usgs-lidar-results-list';
-    list.id = 'usgs-lidar-results-list';
+    list.className = 'noaa-lidar-results-list';
+    list.id = 'noaa-lidar-results-list';
     content.appendChild(list);
 
     // Actions row 1 - Load and Clear
     const actionsRow = document.createElement('div');
-    actionsRow.className = 'usgs-lidar-button-row';
-    actionsRow.id = 'usgs-lidar-results-actions';
+    actionsRow.className = 'noaa-lidar-button-row';
+    actionsRow.id = 'noaa-lidar-results-actions';
     actionsRow.style.display = 'none';
 
     const loadSelectedBtn = document.createElement('button');
-    loadSelectedBtn.className = 'usgs-lidar-btn usgs-lidar-btn-primary';
-    loadSelectedBtn.id = 'usgs-lidar-load-selected-btn';
+    loadSelectedBtn.className = 'noaa-lidar-btn noaa-lidar-btn-primary';
+    loadSelectedBtn.id = 'noaa-lidar-load-selected-btn';
     loadSelectedBtn.textContent = 'Load Selected';
     loadSelectedBtn.addEventListener('click', () => this._callbacks.onLoadSelected());
     actionsRow.appendChild(loadSelectedBtn);
 
     const clearResultsBtn = document.createElement('button');
-    clearResultsBtn.className = 'usgs-lidar-btn usgs-lidar-btn-secondary';
+    clearResultsBtn.className = 'noaa-lidar-btn noaa-lidar-btn-secondary';
     clearResultsBtn.textContent = 'Clear';
     clearResultsBtn.addEventListener('click', () => this._callbacks.onClearResults());
     actionsRow.appendChild(clearResultsBtn);
@@ -403,21 +352,21 @@ export class PanelBuilder {
 
     // Actions row 2 - Copy URLs and Download
     const actionsRow2 = document.createElement('div');
-    actionsRow2.className = 'usgs-lidar-button-row';
-    actionsRow2.id = 'usgs-lidar-results-actions-2';
+    actionsRow2.className = 'noaa-lidar-button-row';
+    actionsRow2.id = 'noaa-lidar-results-actions-2';
     actionsRow2.style.display = 'none';
 
     const copyUrlsBtn = document.createElement('button');
-    copyUrlsBtn.className = 'usgs-lidar-btn usgs-lidar-btn-secondary';
-    copyUrlsBtn.id = 'usgs-lidar-copy-urls-btn';
+    copyUrlsBtn.className = 'noaa-lidar-btn noaa-lidar-btn-secondary';
+    copyUrlsBtn.id = 'noaa-lidar-copy-urls-btn';
     copyUrlsBtn.textContent = 'Copy Signed URLs';
     copyUrlsBtn.title = 'Copy signed COPC URLs of selected items to clipboard';
     copyUrlsBtn.addEventListener('click', () => this._callbacks.onCopySignedUrls());
     actionsRow2.appendChild(copyUrlsBtn);
 
     const downloadBtn = document.createElement('button');
-    downloadBtn.className = 'usgs-lidar-btn usgs-lidar-btn-secondary';
-    downloadBtn.id = 'usgs-lidar-download-btn';
+    downloadBtn.className = 'noaa-lidar-btn noaa-lidar-btn-secondary';
+    downloadBtn.id = 'noaa-lidar-download-btn';
     downloadBtn.textContent = 'Download Selected';
     downloadBtn.title = 'Download selected COPC files';
     downloadBtn.addEventListener('click', () => this._callbacks.onDownloadSelected());
@@ -430,13 +379,13 @@ export class PanelBuilder {
   }
 
   private _updateResultsSection(): void {
-    const countSpan = document.getElementById('usgs-lidar-results-count');
-    const list = document.getElementById('usgs-lidar-results-list');
-    const actions = document.getElementById('usgs-lidar-results-actions');
-    const actions2 = document.getElementById('usgs-lidar-results-actions-2');
-    const loadBtn = document.getElementById('usgs-lidar-load-selected-btn');
-    const copyUrlsBtn = document.getElementById('usgs-lidar-copy-urls-btn');
-    const downloadBtn = document.getElementById('usgs-lidar-download-btn');
+    const countSpan = document.getElementById('noaa-lidar-results-count');
+    const list = document.getElementById('noaa-lidar-results-list');
+    const actions = document.getElementById('noaa-lidar-results-actions');
+    const actions2 = document.getElementById('noaa-lidar-results-actions-2');
+    const loadBtn = document.getElementById('noaa-lidar-load-selected-btn');
+    const copyUrlsBtn = document.getElementById('noaa-lidar-copy-urls-btn');
+    const downloadBtn = document.getElementById('noaa-lidar-download-btn');
 
     if (!list) return;
 
@@ -488,7 +437,7 @@ export class PanelBuilder {
       const isLoaded = this._state.loadedItems.has(item.id);
 
       const itemEl = document.createElement('div');
-      itemEl.className = `usgs-lidar-result-item${isSelected ? ' selected' : ''}${isLoaded ? ' loaded' : ''}`;
+      itemEl.className = `noaa-lidar-result-item${isSelected ? ' selected' : ''}${isLoaded ? ' loaded' : ''}`;
 
       // Checkbox
       const checkbox = document.createElement('input');
@@ -500,16 +449,16 @@ export class PanelBuilder {
 
       // Item info
       const info = document.createElement('div');
-      info.className = 'usgs-lidar-result-info';
+      info.className = 'noaa-lidar-result-info';
 
       const name = document.createElement('div');
-      name.className = 'usgs-lidar-result-name';
+      name.className = 'noaa-lidar-result-name';
       name.textContent = getItemShortName(item.id);
       name.title = item.id;
       info.appendChild(name);
 
       const meta = document.createElement('div');
-      meta.className = 'usgs-lidar-result-meta';
+      meta.className = 'noaa-lidar-result-meta';
       meta.textContent = getUnifiedItemMetadata(item);
       info.appendChild(meta);
 
@@ -518,7 +467,7 @@ export class PanelBuilder {
       // Load button
       if (!isLoaded) {
         const loadItemBtn = document.createElement('button');
-        loadItemBtn.className = 'usgs-lidar-btn-icon';
+        loadItemBtn.className = 'noaa-lidar-btn-icon';
         loadItemBtn.title = 'Load this dataset';
         loadItemBtn.innerHTML = '+';
         loadItemBtn.addEventListener('click', (e) => {
@@ -528,7 +477,7 @@ export class PanelBuilder {
         itemEl.appendChild(loadItemBtn);
       } else {
         const loadedBadge = document.createElement('span');
-        loadedBadge.className = 'usgs-lidar-loaded-badge';
+        loadedBadge.className = 'noaa-lidar-loaded-badge';
         loadedBadge.textContent = 'Loaded';
         itemEl.appendChild(loadedBadge);
       }
@@ -539,27 +488,27 @@ export class PanelBuilder {
 
   private _buildLoadedSection(): HTMLElement {
     const section = document.createElement('div');
-    section.className = 'usgs-lidar-section usgs-lidar-loaded-section';
-    section.id = 'usgs-lidar-loaded-section';
+    section.className = 'noaa-lidar-section noaa-lidar-loaded-section';
+    section.id = 'noaa-lidar-loaded-section';
     section.style.display = 'none';
 
     const header = document.createElement('div');
-    header.className = 'usgs-lidar-section-header';
-    header.innerHTML = 'Loaded <span id="usgs-lidar-loaded-count"></span>';
+    header.className = 'noaa-lidar-section-header';
+    header.innerHTML = 'Loaded <span id="noaa-lidar-loaded-count"></span>';
     section.appendChild(header);
 
     const content = document.createElement('div');
-    content.className = 'usgs-lidar-section-content';
+    content.className = 'noaa-lidar-section-content';
 
     // Loaded list
     const list = document.createElement('div');
-    list.className = 'usgs-lidar-loaded-list';
-    list.id = 'usgs-lidar-loaded-list';
+    list.className = 'noaa-lidar-loaded-list';
+    list.id = 'noaa-lidar-loaded-list';
     content.appendChild(list);
 
     // Clear all button
     const clearBtn = document.createElement('button');
-    clearBtn.className = 'usgs-lidar-btn usgs-lidar-btn-secondary usgs-lidar-btn-full';
+    clearBtn.className = 'noaa-lidar-btn noaa-lidar-btn-secondary noaa-lidar-btn-full';
     clearBtn.textContent = 'Clear All';
     clearBtn.addEventListener('click', () => this._callbacks.onClearLoaded());
     content.appendChild(clearBtn);
@@ -569,9 +518,9 @@ export class PanelBuilder {
   }
 
   private _updateLoadedSection(): void {
-    const section = document.getElementById('usgs-lidar-loaded-section');
-    const countSpan = document.getElementById('usgs-lidar-loaded-count');
-    const list = document.getElementById('usgs-lidar-loaded-list');
+    const section = document.getElementById('noaa-lidar-loaded-section');
+    const countSpan = document.getElementById('noaa-lidar-loaded-count');
+    const list = document.getElementById('noaa-lidar-loaded-list');
 
     if (!section || !list) return;
 
@@ -593,23 +542,23 @@ export class PanelBuilder {
 
     for (const [itemId, info] of this._state.loadedItems) {
       const itemEl = document.createElement('div');
-      itemEl.className = 'usgs-lidar-loaded-item';
+      itemEl.className = 'noaa-lidar-loaded-item';
 
       const nameEl = document.createElement('div');
-      nameEl.className = 'usgs-lidar-loaded-name';
+      nameEl.className = 'noaa-lidar-loaded-name';
       nameEl.textContent = getItemShortName(itemId);
       nameEl.title = itemId;
       itemEl.appendChild(nameEl);
 
       const pointsEl = document.createElement('div');
-      pointsEl.className = 'usgs-lidar-loaded-points';
+      pointsEl.className = 'noaa-lidar-loaded-points';
       pointsEl.textContent = formatPointCount(info.pointCount);
       itemEl.appendChild(pointsEl);
 
-      // Info button for showing metadata (use internal point cloud ID, not USGS item ID)
+      // Info button for showing metadata (use internal point cloud ID, not NOAA item ID)
       if (this._callbacks.onShowMetadata) {
         const infoBtn = document.createElement('button');
-        infoBtn.className = 'usgs-lidar-btn-icon usgs-lidar-btn-info';
+        infoBtn.className = 'noaa-lidar-btn-icon noaa-lidar-btn-info';
         infoBtn.title = 'Show metadata';
         infoBtn.innerHTML = 'ⓘ';
         infoBtn.addEventListener('click', () => this._callbacks.onShowMetadata!(info.id));
@@ -617,7 +566,7 @@ export class PanelBuilder {
       }
 
       const removeBtn = document.createElement('button');
-      removeBtn.className = 'usgs-lidar-btn-icon usgs-lidar-btn-remove';
+      removeBtn.className = 'noaa-lidar-btn-icon noaa-lidar-btn-remove';
       removeBtn.title = 'Unload this dataset';
       removeBtn.innerHTML = '&times;';
       removeBtn.addEventListener('click', () => this._callbacks.onUnloadItem(itemId));
@@ -632,8 +581,8 @@ export class PanelBuilder {
     if (!lidarState) return;
 
     // Sync z-offset slider with lidar control state
-    const zOffsetSlider = document.getElementById('usgs-lidar-zoffset-slider') as HTMLInputElement;
-    const zOffsetValue = document.getElementById('usgs-lidar-zoffset-value');
+    const zOffsetSlider = document.getElementById('noaa-lidar-zoffset-slider') as HTMLInputElement;
+    const zOffsetValue = document.getElementById('noaa-lidar-zoffset-value');
     if (zOffsetSlider && lidarState.zOffset !== undefined) {
       // Only update if value differs to avoid triggering unnecessary events
       if (parseFloat(zOffsetSlider.value) !== lidarState.zOffset) {
@@ -645,8 +594,8 @@ export class PanelBuilder {
     }
 
     // Sync point size slider
-    const sizeSlider = document.getElementById('usgs-lidar-size-slider') as HTMLInputElement;
-    const sizeValue = document.getElementById('usgs-lidar-size-value');
+    const sizeSlider = document.getElementById('noaa-lidar-size-slider') as HTMLInputElement;
+    const sizeValue = document.getElementById('noaa-lidar-size-value');
     if (sizeSlider && lidarState.pointSize !== undefined) {
       if (parseFloat(sizeSlider.value) !== lidarState.pointSize) {
         sizeSlider.value = String(lidarState.pointSize);
@@ -657,8 +606,8 @@ export class PanelBuilder {
     }
 
     // Sync opacity slider
-    const opacitySlider = document.getElementById('usgs-lidar-opacity-slider') as HTMLInputElement;
-    const opacityValue = document.getElementById('usgs-lidar-opacity-value');
+    const opacitySlider = document.getElementById('noaa-lidar-opacity-slider') as HTMLInputElement;
+    const opacityValue = document.getElementById('noaa-lidar-opacity-value');
     if (opacitySlider && lidarState.opacity !== undefined) {
       if (parseFloat(opacitySlider.value) !== lidarState.opacity) {
         opacitySlider.value = String(lidarState.opacity);
@@ -675,7 +624,7 @@ export class PanelBuilder {
     }
 
     // Sync color scheme dropdown
-    const colorSelect = document.getElementById('usgs-lidar-color-select') as HTMLSelectElement;
+    const colorSelect = document.getElementById('noaa-lidar-color-select') as HTMLSelectElement;
     if (colorSelect && lidarState.colorScheme !== undefined) {
       // colorScheme can be a string or an object - only sync if it's a simple string type
       const scheme = typeof lidarState.colorScheme === 'string' ? lidarState.colorScheme : null;
@@ -742,29 +691,29 @@ export class PanelBuilder {
 
   private _buildVisualizationSection(): HTMLElement {
     const section = document.createElement('div');
-    section.className = 'usgs-lidar-section usgs-lidar-viz-section';
-    section.id = 'usgs-lidar-viz-section';
+    section.className = 'noaa-lidar-section noaa-lidar-viz-section';
+    section.id = 'noaa-lidar-viz-section';
     section.style.display = 'none';
 
     const header = document.createElement('div');
-    header.className = 'usgs-lidar-section-header';
+    header.className = 'noaa-lidar-section-header';
     header.textContent = 'Visualization';
     section.appendChild(header);
 
     const content = document.createElement('div');
-    content.className = 'usgs-lidar-section-content';
+    content.className = 'noaa-lidar-section-content';
 
     // Color scheme dropdown
     const colorRow = document.createElement('div');
-    colorRow.className = 'usgs-lidar-control-row';
+    colorRow.className = 'noaa-lidar-control-row';
 
     const colorLabel = document.createElement('label');
     colorLabel.textContent = 'Color By';
     colorRow.appendChild(colorLabel);
 
     const colorSelect = document.createElement('select');
-    colorSelect.className = 'usgs-lidar-select';
-    colorSelect.id = 'usgs-lidar-color-select';
+    colorSelect.className = 'noaa-lidar-select';
+    colorSelect.id = 'noaa-lidar-color-select';
     ['elevation', 'intensity', 'classification', 'rgb'].forEach((scheme) => {
       const option = document.createElement('option');
       option.value = scheme;
@@ -789,7 +738,7 @@ export class PanelBuilder {
 
     // Point size slider
     const sizeRow = document.createElement('div');
-    sizeRow.className = 'usgs-lidar-control-row';
+    sizeRow.className = 'noaa-lidar-control-row';
 
     const sizeLabel = document.createElement('label');
     sizeLabel.textContent = 'Point Size';
@@ -797,8 +746,8 @@ export class PanelBuilder {
 
     const sizeSlider = document.createElement('input');
     sizeSlider.type = 'range';
-    sizeSlider.className = 'usgs-lidar-slider';
-    sizeSlider.id = 'usgs-lidar-size-slider';
+    sizeSlider.className = 'noaa-lidar-slider';
+    sizeSlider.id = 'noaa-lidar-size-slider';
     sizeSlider.min = '0.5';
     sizeSlider.max = '10';
     sizeSlider.step = '0.5';
@@ -810,8 +759,8 @@ export class PanelBuilder {
     sizeRow.appendChild(sizeSlider);
 
     const sizeValue = document.createElement('span');
-    sizeValue.className = 'usgs-lidar-slider-value';
-    sizeValue.id = 'usgs-lidar-size-value';
+    sizeValue.className = 'noaa-lidar-slider-value';
+    sizeValue.id = 'noaa-lidar-size-value';
     sizeValue.textContent = '2';
     sizeRow.appendChild(sizeValue);
 
@@ -819,7 +768,7 @@ export class PanelBuilder {
 
     // Opacity slider
     const opacityRow = document.createElement('div');
-    opacityRow.className = 'usgs-lidar-control-row';
+    opacityRow.className = 'noaa-lidar-control-row';
 
     const opacityLabel = document.createElement('label');
     opacityLabel.textContent = 'Opacity';
@@ -827,8 +776,8 @@ export class PanelBuilder {
 
     const opacitySlider = document.createElement('input');
     opacitySlider.type = 'range';
-    opacitySlider.className = 'usgs-lidar-slider';
-    opacitySlider.id = 'usgs-lidar-opacity-slider';
+    opacitySlider.className = 'noaa-lidar-slider';
+    opacitySlider.id = 'noaa-lidar-opacity-slider';
     opacitySlider.min = '0.1';
     opacitySlider.max = '1';
     opacitySlider.step = '0.1';
@@ -840,8 +789,8 @@ export class PanelBuilder {
     opacityRow.appendChild(opacitySlider);
 
     const opacityValue = document.createElement('span');
-    opacityValue.className = 'usgs-lidar-slider-value';
-    opacityValue.id = 'usgs-lidar-opacity-value';
+    opacityValue.className = 'noaa-lidar-slider-value';
+    opacityValue.id = 'noaa-lidar-opacity-value';
     opacityValue.textContent = '1';
     opacityRow.appendChild(opacityValue);
 
@@ -849,7 +798,7 @@ export class PanelBuilder {
 
     // Z Offset slider (to adjust for absolute elevation) - moved up, right after opacity
     const zOffsetRow = document.createElement('div');
-    zOffsetRow.className = 'usgs-lidar-control-row';
+    zOffsetRow.className = 'noaa-lidar-control-row';
 
     const zOffsetLabel = document.createElement('label');
     zOffsetLabel.textContent = 'Z Offset';
@@ -858,8 +807,8 @@ export class PanelBuilder {
 
     const zOffsetSlider = document.createElement('input');
     zOffsetSlider.type = 'range';
-    zOffsetSlider.className = 'usgs-lidar-slider';
-    zOffsetSlider.id = 'usgs-lidar-zoffset-slider';
+    zOffsetSlider.className = 'noaa-lidar-slider';
+    zOffsetSlider.id = 'noaa-lidar-zoffset-slider';
     zOffsetSlider.min = '-3000';
     zOffsetSlider.max = '0';
     zOffsetSlider.step = '50';
@@ -872,8 +821,8 @@ export class PanelBuilder {
     zOffsetRow.appendChild(zOffsetSlider);
 
     const zOffsetValue = document.createElement('span');
-    zOffsetValue.className = 'usgs-lidar-slider-value usgs-lidar-slider-value-wide';
-    zOffsetValue.id = 'usgs-lidar-zoffset-value';
+    zOffsetValue.className = 'noaa-lidar-slider-value noaa-lidar-slider-value-wide';
+    zOffsetValue.id = 'noaa-lidar-zoffset-value';
     zOffsetValue.textContent = '0m';
     zOffsetRow.appendChild(zOffsetValue);
 
@@ -893,7 +842,7 @@ export class PanelBuilder {
    * Shows/hides the visualization section.
    */
   showVisualizationSection(show: boolean): void {
-    const section = document.getElementById('usgs-lidar-viz-section');
+    const section = document.getElementById('noaa-lidar-viz-section');
     if (section) {
       section.style.display = show ? 'block' : 'none';
     }
@@ -924,25 +873,25 @@ export class PanelBuilder {
     if (!panel) return null;
 
     const section = document.createElement('div');
-    section.className = 'usgs-lidar-section usgs-lidar-crosssection-section';
-    section.id = 'usgs-lidar-crosssection-section';
+    section.className = 'noaa-lidar-section noaa-lidar-crosssection-section';
+    section.id = 'noaa-lidar-crosssection-section';
     section.style.display = 'none'; // Hidden until data is loaded
 
     // Collapsible header
     const header = document.createElement('div');
-    header.className = 'usgs-lidar-section-header usgs-lidar-section-collapsible';
-    header.innerHTML = '<span class="usgs-lidar-section-toggle">▶</span> Cross-Section';
+    header.className = 'noaa-lidar-section-header noaa-lidar-section-collapsible';
+    header.innerHTML = '<span class="noaa-lidar-section-toggle">▶</span> Cross-Section';
     header.style.cursor = 'pointer';
 
     // Collapsible body
     const body = document.createElement('div');
-    body.className = 'usgs-lidar-section-body';
+    body.className = 'noaa-lidar-section-body';
     body.style.display = 'none';
     body.appendChild(panel);
 
     // Toggle handler
     header.addEventListener('click', () => {
-      const toggle = header.querySelector('.usgs-lidar-section-toggle');
+      const toggle = header.querySelector('.noaa-lidar-section-toggle');
       if (body.style.display === 'none') {
         body.style.display = 'block';
         if (toggle) toggle.textContent = '▼';
@@ -963,16 +912,16 @@ export class PanelBuilder {
    */
   private _buildPickableCheckbox(): HTMLElement {
     const group = document.createElement('div');
-    group.className = 'usgs-lidar-checkbox-row';
+    group.className = 'noaa-lidar-checkbox-row';
 
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
-    checkbox.id = 'usgs-lidar-pickable-checkbox';
+    checkbox.id = 'noaa-lidar-pickable-checkbox';
     checkbox.checked = this._state.lidarState?.pickable ?? false;
     this._pickableCheckbox = checkbox;
 
     const label = document.createElement('label');
-    label.htmlFor = 'usgs-lidar-pickable-checkbox';
+    label.htmlFor = 'noaa-lidar-pickable-checkbox';
     label.textContent = 'Enable point picking';
 
     checkbox.addEventListener('change', () => {
@@ -990,20 +939,20 @@ export class PanelBuilder {
    */
   private _buildElevationFilter(): HTMLElement {
     const group = document.createElement('div');
-    group.className = 'usgs-lidar-checkbox-group';
+    group.className = 'noaa-lidar-checkbox-group';
 
     // Checkbox row
     const checkboxRow = document.createElement('div');
-    checkboxRow.className = 'usgs-lidar-checkbox-row';
+    checkboxRow.className = 'noaa-lidar-checkbox-row';
 
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
-    checkbox.id = 'usgs-lidar-elevation-checkbox';
+    checkbox.id = 'noaa-lidar-elevation-checkbox';
     checkbox.checked = false;
     this._elevationCheckbox = checkbox;
 
     const label = document.createElement('label');
-    label.htmlFor = 'usgs-lidar-elevation-checkbox';
+    label.htmlFor = 'noaa-lidar-elevation-checkbox';
     label.textContent = 'Elevation Filter';
 
     checkboxRow.appendChild(checkbox);
@@ -1012,7 +961,7 @@ export class PanelBuilder {
 
     // Dual range slider container (hidden by default)
     const sliderContainer = document.createElement('div');
-    sliderContainer.className = 'usgs-lidar-dual-range-row';
+    sliderContainer.className = 'noaa-lidar-dual-range-row';
     sliderContainer.style.display = 'none';
     this._elevationSliderContainer = sliderContainer;
 
@@ -1026,23 +975,23 @@ export class PanelBuilder {
 
     // Dual range slider wrapper
     const sliderWrapper = document.createElement('div');
-    sliderWrapper.className = 'usgs-lidar-dual-range-slider';
+    sliderWrapper.className = 'noaa-lidar-dual-range-slider';
 
     // Track background
     const track = document.createElement('div');
-    track.className = 'usgs-lidar-dual-range-track';
+    track.className = 'noaa-lidar-dual-range-track';
     sliderWrapper.appendChild(track);
 
     // Track fill (colored portion between thumbs)
     const trackFill = document.createElement('div');
-    trackFill.className = 'usgs-lidar-dual-range-fill';
+    trackFill.className = 'noaa-lidar-dual-range-fill';
     this._elevationTrackFill = trackFill;
     sliderWrapper.appendChild(trackFill);
 
     // Min slider (lower thumb)
     const minInput = document.createElement('input');
     minInput.type = 'range';
-    minInput.className = 'usgs-lidar-dual-range-input usgs-lidar-dual-range-min';
+    minInput.className = 'noaa-lidar-dual-range-input noaa-lidar-dual-range-min';
     minInput.min = String(bounds.min);
     minInput.max = String(bounds.max);
     minInput.step = '1';
@@ -1053,7 +1002,7 @@ export class PanelBuilder {
     // Max slider (upper thumb)
     const maxInput = document.createElement('input');
     maxInput.type = 'range';
-    maxInput.className = 'usgs-lidar-dual-range-input usgs-lidar-dual-range-max';
+    maxInput.className = 'noaa-lidar-dual-range-input noaa-lidar-dual-range-max';
     maxInput.min = String(bounds.min);
     maxInput.max = String(bounds.max);
     maxInput.step = '1';
@@ -1065,7 +1014,7 @@ export class PanelBuilder {
 
     // Range value display
     const rangeValue = document.createElement('span');
-    rangeValue.className = 'usgs-lidar-dual-range-value';
+    rangeValue.className = 'noaa-lidar-dual-range-value';
     rangeValue.textContent = `${bounds.min} - ${bounds.max}`;
     this._elevationRangeValue = rangeValue;
     sliderContainer.appendChild(rangeValue);
@@ -1191,23 +1140,23 @@ export class PanelBuilder {
    */
   private _buildClassificationLegend(): HTMLElement {
     const container = document.createElement('div');
-    container.className = 'usgs-lidar-classification-legend';
+    container.className = 'noaa-lidar-classification-legend';
     container.style.display = 'none'; // Hidden by default, shown when classification scheme is selected
     this._classificationLegendContainer = container;
 
     // Header with Show All / Hide All buttons
     const header = document.createElement('div');
-    header.className = 'usgs-lidar-classification-header';
+    header.className = 'noaa-lidar-classification-header';
 
     const showAllBtn = document.createElement('button');
     showAllBtn.type = 'button';
-    showAllBtn.className = 'usgs-lidar-btn-small';
+    showAllBtn.className = 'noaa-lidar-btn-small';
     showAllBtn.textContent = 'Show All';
     showAllBtn.addEventListener('click', () => this._callbacks.onClassificationShowAll());
 
     const hideAllBtn = document.createElement('button');
     hideAllBtn.type = 'button';
-    hideAllBtn.className = 'usgs-lidar-btn-small';
+    hideAllBtn.className = 'noaa-lidar-btn-small';
     hideAllBtn.textContent = 'Hide All';
     hideAllBtn.addEventListener('click', () => this._callbacks.onClassificationHideAll());
 
@@ -1217,8 +1166,8 @@ export class PanelBuilder {
 
     // Legend items list
     const list = document.createElement('div');
-    list.className = 'usgs-lidar-classification-list';
-    list.id = 'usgs-lidar-classification-list';
+    list.className = 'noaa-lidar-classification-list';
+    list.id = 'noaa-lidar-classification-list';
 
     // Build legend items from available classifications
     this._rebuildClassificationList(list);
@@ -1239,7 +1188,7 @@ export class PanelBuilder {
 
     if (!availableClassifications || availableClassifications.size === 0) {
       const placeholder = document.createElement('div');
-      placeholder.className = 'usgs-lidar-classification-empty';
+      placeholder.className = 'noaa-lidar-classification-empty';
       placeholder.textContent = 'Loading classifications...';
       listContainer.appendChild(placeholder);
       return;
@@ -1250,11 +1199,11 @@ export class PanelBuilder {
 
     for (const code of sortedCodes) {
       const item = document.createElement('div');
-      item.className = 'usgs-lidar-classification-item';
+      item.className = 'noaa-lidar-classification-item';
 
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
-      checkbox.id = `usgs-lidar-class-${code}`;
+      checkbox.id = `noaa-lidar-class-${code}`;
       checkbox.checked = !hiddenClassifications.has(code);
       checkbox.addEventListener('change', () => {
         this._callbacks.onClassificationToggle(code, checkbox.checked);
@@ -1262,13 +1211,13 @@ export class PanelBuilder {
       this._classificationCheckboxes.set(code, checkbox);
 
       const swatch = document.createElement('span');
-      swatch.className = 'usgs-lidar-classification-swatch';
+      swatch.className = 'noaa-lidar-classification-swatch';
       const color = CLASSIFICATION_COLORS[code] || [128, 128, 128];
       swatch.style.backgroundColor = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
 
       const label = document.createElement('label');
-      label.htmlFor = `usgs-lidar-class-${code}`;
-      label.className = 'usgs-lidar-classification-label';
+      label.htmlFor = `noaa-lidar-class-${code}`;
+      label.className = 'noaa-lidar-classification-label';
       label.textContent = getClassificationName(code);
 
       item.appendChild(checkbox);
@@ -1292,7 +1241,7 @@ export class PanelBuilder {
    * Updates the classification legend checkboxes.
    */
   updateClassificationLegend(): void {
-    const list = document.getElementById('usgs-lidar-classification-list');
+    const list = document.getElementById('noaa-lidar-classification-list');
     if (list) {
       this._rebuildClassificationList(list);
     }
@@ -1303,21 +1252,21 @@ export class PanelBuilder {
    */
   private _buildColormapSection(): HTMLElement {
     const container = document.createElement('div');
-    container.className = 'usgs-lidar-colormap-section';
+    container.className = 'noaa-lidar-colormap-section';
     container.style.display = 'none'; // Hidden by default
     this._colormapContainer = container;
 
     // Colormap dropdown row
     const colormapRow = document.createElement('div');
-    colormapRow.className = 'usgs-lidar-control-row';
+    colormapRow.className = 'noaa-lidar-control-row';
 
     const colormapLabel = document.createElement('label');
     colormapLabel.textContent = 'Colormap';
     colormapRow.appendChild(colormapLabel);
 
     const colormapSelect = document.createElement('select');
-    colormapSelect.className = 'usgs-lidar-select';
-    colormapSelect.id = 'usgs-lidar-colormap-select';
+    colormapSelect.className = 'noaa-lidar-select';
+    colormapSelect.id = 'noaa-lidar-colormap-select';
 
     // Add colormap options
     for (const name of COLORMAP_NAMES) {
@@ -1340,18 +1289,18 @@ export class PanelBuilder {
 
     // Colorbar container with min/max labels
     const colorbarContainer = document.createElement('div');
-    colorbarContainer.className = 'usgs-lidar-colorbar-container';
+    colorbarContainer.className = 'noaa-lidar-colorbar-container';
 
     // Min label
     const minLabel = document.createElement('span');
-    minLabel.className = 'usgs-lidar-colorbar-label usgs-lidar-colorbar-min';
+    minLabel.className = 'noaa-lidar-colorbar-label noaa-lidar-colorbar-min';
     minLabel.textContent = '0';
     this._colorbarMinLabel = minLabel;
     colorbarContainer.appendChild(minLabel);
 
     // Colorbar canvas
     const colorbarCanvas = document.createElement('canvas');
-    colorbarCanvas.className = 'usgs-lidar-colorbar-canvas';
+    colorbarCanvas.className = 'noaa-lidar-colorbar-canvas';
     colorbarCanvas.width = 200;
     colorbarCanvas.height = 16;
     this._colorbarCanvas = colorbarCanvas;
@@ -1359,7 +1308,7 @@ export class PanelBuilder {
 
     // Max label
     const maxLabel = document.createElement('span');
-    maxLabel.className = 'usgs-lidar-colorbar-label usgs-lidar-colorbar-max';
+    maxLabel.className = 'noaa-lidar-colorbar-label noaa-lidar-colorbar-max';
     maxLabel.textContent = '100';
     this._colorbarMaxLabel = maxLabel;
     colorbarContainer.appendChild(maxLabel);
@@ -1380,11 +1329,11 @@ export class PanelBuilder {
    */
   private _buildColorRangeControls(): HTMLElement {
     const container = document.createElement('div');
-    container.className = 'usgs-lidar-color-range-section';
+    container.className = 'noaa-lidar-color-range-section';
 
     // Header with label and reset button
     const header = document.createElement('div');
-    header.className = 'usgs-lidar-color-range-header';
+    header.className = 'noaa-lidar-color-range-header';
 
     const label = document.createElement('span');
     label.textContent = 'Color Range';
@@ -1392,7 +1341,7 @@ export class PanelBuilder {
 
     const resetBtn = document.createElement('button');
     resetBtn.type = 'button';
-    resetBtn.className = 'usgs-lidar-btn-small';
+    resetBtn.className = 'noaa-lidar-btn-small';
     resetBtn.textContent = 'Reset';
     resetBtn.addEventListener('click', () => this._resetColorRange());
     header.appendChild(resetBtn);
@@ -1401,27 +1350,27 @@ export class PanelBuilder {
 
     // Mode toggle (Percentile / Absolute)
     const modeRow = document.createElement('div');
-    modeRow.className = 'usgs-lidar-color-range-mode';
+    modeRow.className = 'noaa-lidar-color-range-mode';
 
     const percentileOption = document.createElement('label');
-    percentileOption.className = 'usgs-lidar-radio-option';
+    percentileOption.className = 'noaa-lidar-radio-option';
     const percentileRadio = document.createElement('input');
     percentileRadio.type = 'radio';
-    percentileRadio.name = 'usgs-lidar-color-range-mode';
+    percentileRadio.name = 'noaa-lidar-color-range-mode';
     percentileRadio.value = 'percentile';
     percentileRadio.checked = true;
-    percentileRadio.id = 'usgs-lidar-color-range-percentile';
+    percentileRadio.id = 'noaa-lidar-color-range-percentile';
     this._colorRangeModePercentile = percentileRadio;
     percentileOption.appendChild(percentileRadio);
     percentileOption.appendChild(document.createTextNode(' Percentile'));
 
     const absoluteOption = document.createElement('label');
-    absoluteOption.className = 'usgs-lidar-radio-option';
+    absoluteOption.className = 'noaa-lidar-radio-option';
     const absoluteRadio = document.createElement('input');
     absoluteRadio.type = 'radio';
-    absoluteRadio.name = 'usgs-lidar-color-range-mode';
+    absoluteRadio.name = 'noaa-lidar-color-range-mode';
     absoluteRadio.value = 'absolute';
-    absoluteRadio.id = 'usgs-lidar-color-range-absolute';
+    absoluteRadio.id = 'noaa-lidar-color-range-absolute';
     this._colorRangeModeAbsolute = absoluteRadio;
     absoluteOption.appendChild(absoluteRadio);
     absoluteOption.appendChild(document.createTextNode(' Absolute'));
@@ -1448,8 +1397,8 @@ export class PanelBuilder {
    */
   private _buildPercentileSliders(): HTMLElement {
     const container = document.createElement('div');
-    container.className = 'usgs-lidar-dual-range-row';
-    container.id = 'usgs-lidar-percentile-slider-container';
+    container.className = 'noaa-lidar-dual-range-row';
+    container.id = 'noaa-lidar-percentile-slider-container';
     this._percentileSliderContainer = container;
 
     const label = document.createElement('label');
@@ -1458,23 +1407,23 @@ export class PanelBuilder {
 
     // Dual range slider wrapper
     const sliderWrapper = document.createElement('div');
-    sliderWrapper.className = 'usgs-lidar-dual-range-slider';
+    sliderWrapper.className = 'noaa-lidar-dual-range-slider';
 
     // Track background
     const track = document.createElement('div');
-    track.className = 'usgs-lidar-dual-range-track';
+    track.className = 'noaa-lidar-dual-range-track';
     sliderWrapper.appendChild(track);
 
     // Track fill
     const trackFill = document.createElement('div');
-    trackFill.className = 'usgs-lidar-dual-range-fill';
+    trackFill.className = 'noaa-lidar-dual-range-fill';
     this._percentileTrackFill = trackFill;
     sliderWrapper.appendChild(trackFill);
 
     // Min slider
     const minInput = document.createElement('input');
     minInput.type = 'range';
-    minInput.className = 'usgs-lidar-dual-range-input usgs-lidar-dual-range-min';
+    minInput.className = 'noaa-lidar-dual-range-input noaa-lidar-dual-range-min';
     minInput.min = '0';
     minInput.max = '100';
     minInput.step = '1';
@@ -1485,7 +1434,7 @@ export class PanelBuilder {
     // Max slider
     const maxInput = document.createElement('input');
     maxInput.type = 'range';
-    maxInput.className = 'usgs-lidar-dual-range-input usgs-lidar-dual-range-max';
+    maxInput.className = 'noaa-lidar-dual-range-input noaa-lidar-dual-range-max';
     maxInput.min = '0';
     maxInput.max = '100';
     maxInput.step = '1';
@@ -1497,7 +1446,7 @@ export class PanelBuilder {
 
     // Range value display
     const rangeValue = document.createElement('span');
-    rangeValue.className = 'usgs-lidar-dual-range-value';
+    rangeValue.className = 'noaa-lidar-dual-range-value';
     rangeValue.textContent = '2% - 98%';
     this._percentileRangeValue = rangeValue;
     container.appendChild(rangeValue);
@@ -1517,8 +1466,8 @@ export class PanelBuilder {
    */
   private _buildAbsoluteSliders(): HTMLElement {
     const container = document.createElement('div');
-    container.className = 'usgs-lidar-dual-range-row';
-    container.id = 'usgs-lidar-absolute-slider-container';
+    container.className = 'noaa-lidar-dual-range-row';
+    container.id = 'noaa-lidar-absolute-slider-container';
     container.style.display = 'none'; // Hidden by default (percentile mode is default)
     this._absoluteSliderContainer = container;
 
@@ -1528,23 +1477,23 @@ export class PanelBuilder {
 
     // Dual range slider wrapper
     const sliderWrapper = document.createElement('div');
-    sliderWrapper.className = 'usgs-lidar-dual-range-slider';
+    sliderWrapper.className = 'noaa-lidar-dual-range-slider';
 
     // Track background
     const track = document.createElement('div');
-    track.className = 'usgs-lidar-dual-range-track';
+    track.className = 'noaa-lidar-dual-range-track';
     sliderWrapper.appendChild(track);
 
     // Track fill
     const trackFill = document.createElement('div');
-    trackFill.className = 'usgs-lidar-dual-range-fill';
+    trackFill.className = 'noaa-lidar-dual-range-fill';
     this._absoluteTrackFill = trackFill;
     sliderWrapper.appendChild(trackFill);
 
     // Min slider
     const minInput = document.createElement('input');
     minInput.type = 'range';
-    minInput.className = 'usgs-lidar-dual-range-input usgs-lidar-dual-range-min';
+    minInput.className = 'noaa-lidar-dual-range-input noaa-lidar-dual-range-min';
     minInput.min = String(this._dataBounds.min);
     minInput.max = String(this._dataBounds.max);
     minInput.step = '0.01';
@@ -1555,7 +1504,7 @@ export class PanelBuilder {
     // Max slider
     const maxInput = document.createElement('input');
     maxInput.type = 'range';
-    maxInput.className = 'usgs-lidar-dual-range-input usgs-lidar-dual-range-max';
+    maxInput.className = 'noaa-lidar-dual-range-input noaa-lidar-dual-range-max';
     maxInput.min = String(this._dataBounds.min);
     maxInput.max = String(this._dataBounds.max);
     maxInput.step = '0.01';
@@ -1567,7 +1516,7 @@ export class PanelBuilder {
 
     // Range value display (current selected values)
     const rangeValue = document.createElement('span');
-    rangeValue.className = 'usgs-lidar-dual-range-value';
+    rangeValue.className = 'noaa-lidar-dual-range-value';
     rangeValue.textContent = `${this._formatValue(this._dataBounds.min)} - ${this._formatValue(this._dataBounds.max)}`;
     this._absoluteRangeValue = rangeValue;
     container.appendChild(rangeValue);
