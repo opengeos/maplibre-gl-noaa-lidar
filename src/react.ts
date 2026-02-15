@@ -1,17 +1,19 @@
 // React entry point
-export { UsgsLidarControlReact } from './lib/core/UsgsLidarControlReact';
+export { NoaaLidarControlReact } from './lib/core/NoaaLidarControlReact';
 
 // React hooks
-export { useUsgsLidarState } from './lib/hooks';
+export { useNoaaLidarState } from './lib/hooks';
 
 // Re-export types for React consumers
 export type {
-  UsgsLidarControlOptions,
-  UsgsLidarState,
-  UsgsLidarControlReactProps,
-  UsgsLidarControlEvent,
-  UsgsLidarEventHandler,
-  UsgsLidarEventData,
+  // Primary types
+  NoaaLidarControlOptions,
+  NoaaLidarState,
+  NoaaLidarControlReactProps,
+  NoaaLidarControlEvent,
+  NoaaLidarEventHandler,
+  NoaaLidarEventData,
+  // Other types
   StacItem,
   StacSearchParams,
   StacSearchResponse,

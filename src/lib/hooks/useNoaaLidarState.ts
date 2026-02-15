@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react';
-import type { UsgsLidarState, UnifiedSearchItem, DataSourceType } from '../core/types';
+import type { NoaaLidarState, UnifiedSearchItem, DataSourceType } from '../core/types';
 
 /**
- * Initial state for the USGS LiDAR control
+ * Initial state for the NOAA LiDAR control
  */
-const createInitialState = (options?: Partial<UsgsLidarState>): UsgsLidarState => ({
+const createInitialState = (options?: Partial<NoaaLidarState>): NoaaLidarState => ({
   collapsed: true,
   panelWidth: 380,
   maxHeight: 500,
@@ -23,7 +23,7 @@ const createInitialState = (options?: Partial<UsgsLidarState>): UsgsLidarState =
 });
 
 /**
- * Custom hook for managing USGS LiDAR control state in React applications.
+ * Custom hook for managing NOAA LiDAR control state in React applications.
  *
  * @example
  * ```tsx
@@ -34,7 +34,7 @@ const createInitialState = (options?: Partial<UsgsLidarState>): UsgsLidarState =
  *     setSearchResults,
  *     selectItem,
  *     deselectItem,
- *   } = useUsgsLidarState({ collapsed: false });
+ *   } = useNoaaLidarState({ collapsed: false });
  *
  *   return (
  *     <div>
@@ -47,8 +47,8 @@ const createInitialState = (options?: Partial<UsgsLidarState>): UsgsLidarState =
  * }
  * ```
  */
-export function useUsgsLidarState(initialOptions?: Partial<UsgsLidarState>) {
-  const [state, setState] = useState<UsgsLidarState>(() =>
+export function useNoaaLidarState(initialOptions?: Partial<NoaaLidarState>) {
+  const [state, setState] = useState<NoaaLidarState>(() =>
     createInitialState(initialOptions)
   );
 
@@ -125,6 +125,7 @@ export function useUsgsLidarState(initialOptions?: Partial<UsgsLidarState>) {
 
   /**
    * Sets the data source
+   * @deprecated NOAA data is EPT-only, this function is kept for compatibility
    */
   const setDataSource = useCallback((source: DataSourceType) => {
     setState((prev) => ({

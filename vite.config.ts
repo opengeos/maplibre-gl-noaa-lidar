@@ -23,7 +23,7 @@ export default defineConfig({
         index: resolve(__dirname, 'src/index.ts'),
         react: resolve(__dirname, 'src/react.ts'),
       },
-      name: 'MapLibreUsgsLidar',
+      name: 'MapLibreNoaaLidar',
       formats: ['es', 'cjs'],
       fileName: (format, entryName) => {
         const ext = format === 'es' ? 'mjs' : 'cjs';
@@ -49,7 +49,7 @@ export default defineConfig({
           'maplibre-gl-geo-editor': 'MapLibreGeoEditor',
         },
         assetFileNames: (assetInfo) => {
-          if (assetInfo.name === 'style.css') return 'maplibre-gl-usgs-lidar.css';
+          if (assetInfo.name === 'style.css') return 'maplibre-gl-noaa-lidar.css';
           return assetInfo.name || '';
         },
       },

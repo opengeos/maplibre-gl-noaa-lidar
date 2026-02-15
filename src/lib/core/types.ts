@@ -35,7 +35,7 @@ export interface StacAsset {
 }
 
 /**
- * STAC Item from Planetary Computer 3dep-lidar-copc collection
+ * STAC Item from NOAA Coastal LiDAR catalog
  */
 export interface StacItem {
   id: string;
@@ -100,12 +100,13 @@ export interface StacSearchParams {
 }
 
 /**
- * Data source type for LiDAR data
+ * Data source type for LiDAR data (EPT only for NOAA data)
+ * @deprecated NOAA data is EPT-only, this type is kept for compatibility
  */
-export type DataSourceType = 'copc' | 'ept';
+export type DataSourceType = 'ept';
 
 /**
- * EPT feature from TopoJSON boundaries
+ * EPT feature (kept for compatibility)
  */
 export interface EptFeature {
   type: 'Feature';
@@ -119,7 +120,7 @@ export interface EptFeature {
 }
 
 /**
- * EPT search response
+ * EPT search response (kept for compatibility)
  */
 export interface EptSearchResponse {
   type: 'FeatureCollection';
@@ -128,7 +129,7 @@ export interface EptSearchResponse {
 }
 
 /**
- * Unified search item that can represent either COPC or EPT data
+ * Unified search item representing NOAA LiDAR EPT data
  */
 export interface UnifiedSearchItem {
   id: string;
@@ -142,6 +143,7 @@ export interface UnifiedSearchItem {
     url?: string;
     [key: string]: unknown;
   };
+  /** @deprecated NOAA data is EPT-only */
   sourceType: DataSourceType;
   originalItem: StacItem | EptFeature;
 }
@@ -156,9 +158,9 @@ export interface CacheEntry<T> {
 }
 
 /**
- * Options for configuring the UsgsLidarControl
+ * Options for configuring the NoaaLidarControl
  */
-export interface UsgsLidarControlOptions {
+export interface NoaaLidarControlOptions {
   /**
    * Whether the control panel should start collapsed
    * @default true
@@ -173,7 +175,7 @@ export interface UsgsLidarControlOptions {
 
   /**
    * Title displayed in the control header
-   * @default 'USGS 3DEP LiDAR'
+   * @default 'NOAA Coastal LiDAR'
    */
   title?: string;
 
@@ -218,20 +220,14 @@ export interface UsgsLidarControlOptions {
   lidarControlOptions?: Partial<LidarControlOptions>;
 
   /**
-   * Default data source type
-   * @default 'ept'
+   * NOAA STAC catalog URL
+   * @default 'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/entwine/stac/catalog.json'
    */
-  defaultDataSource?: DataSourceType;
+  stacCatalogUrl?: string;
 
   /**
-   * EPT TopoJSON boundary URL
-   * @default 'https://raw.githubusercontent.com/hobuinc/usgs-lidar/master/boundaries/boundaries.topojson'
-   */
-  eptBoundaryUrl?: string;
-
-  /**
-   * Cache duration in milliseconds (for EPT boundaries)
-   * @default 259200000 (3 days)
+   * Cache duration in milliseconds (for STAC items)
+   * @default 604800000 (7 days)
    */
   cacheDuration?: number;
 }
@@ -250,9 +246,9 @@ export interface LoadedItemInfo extends PointCloudInfo {
 }
 
 /**
- * Internal state of the USGS LiDAR control
+ * Internal state of the NOAA LiDAR control
  */
-export interface UsgsLidarState {
+export interface NoaaLidarState {
   /** Whether the panel is collapsed */
   collapsed: boolean;
   /** Panel width in pixels */
@@ -260,7 +256,7 @@ export interface UsgsLidarState {
   /** Panel max height in pixels */
   maxHeight: number;
 
-  /** Current data source type */
+  /** @deprecated NOAA data is EPT-only, kept for compatibility */
   dataSource: DataSourceType;
 
   /** Current search mode */
@@ -290,7 +286,7 @@ export interface UsgsLidarState {
 /**
  * Event types emitted by the control
  */
-export type UsgsLidarControlEvent =
+export type NoaaLidarControlEvent =
   | 'collapse'
   | 'expand'
   | 'statechange'
@@ -309,9 +305,9 @@ export type UsgsLidarControlEvent =
 /**
  * Event data passed to event handlers
  */
-export interface UsgsLidarEventData {
-  type: UsgsLidarControlEvent;
-  state: UsgsLidarState;
+export interface NoaaLidarEventData {
+  type: NoaaLidarControlEvent;
+  state: NoaaLidarState;
   items?: UnifiedSearchItem[];
   error?: Error;
   pointCloud?: PointCloudInfo;
@@ -322,7 +318,7 @@ export interface UsgsLidarEventData {
 /**
  * Event handler function type
  */
-export type UsgsLidarEventHandler = (event: UsgsLidarEventData) => void;
+export type NoaaLidarEventHandler = (event: NoaaLidarEventData) => void;
 
 /**
  * Drawn rectangle feature from GeoEditor
@@ -332,13 +328,13 @@ export type DrawnRectangle = Feature<Polygon>;
 /**
  * Props for the React wrapper component
  */
-export interface UsgsLidarControlReactProps extends UsgsLidarControlOptions {
+export interface NoaaLidarControlReactProps extends NoaaLidarControlOptions {
   /** MapLibre GL map instance */
   map: MapLibreMap;
   /** Geoman instance for drawing */
   geoman?: unknown;
   /** Callback fired when the control state changes */
-  onStateChange?: (state: UsgsLidarState) => void;
+  onStateChange?: (state: NoaaLidarState) => void;
   /** Callback fired when search completes */
   onSearchComplete?: (items: UnifiedSearchItem[]) => void;
   /** Callback fired when a point cloud is loaded */
@@ -346,8 +342,8 @@ export interface UsgsLidarControlReactProps extends UsgsLidarControlOptions {
   /** Callback fired when an error occurs */
   onError?: (error: Error) => void;
   /** Callback to receive the internal control instance */
-  onControlReady?: (control: UsgsLidarControl) => void;
+  onControlReady?: (control: NoaaLidarControl) => void;
 }
 
 // Forward declaration for the control type
-export type UsgsLidarControl = import('./UsgsLidarControl').UsgsLidarControl;
+export type NoaaLidarControl = import('./NoaaLidarControl').NoaaLidarControl;

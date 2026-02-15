@@ -1,27 +1,25 @@
-# maplibre-gl-usgs-lidar
+# maplibre-gl-noaa-lidar
 
-A MapLibre GL JS plugin for searching and visualizing USGS 3DEP LiDAR data from Microsoft Planetary Computer (COPC) and AWS Open Data (EPT).
+A MapLibre GL JS plugin for searching and visualizing NOAA Coastal LiDAR data from AWS Open Data.
 
-[![npm version](https://img.shields.io/npm/v/maplibre-gl-usgs-lidar.svg)](https://www.npmjs.com/package/maplibre-gl-usgs-lidar)
+[![npm version](https://img.shields.io/npm/v/maplibre-gl-noaa-lidar.svg)](https://www.npmjs.com/package/maplibre-gl-noaa-lidar)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Open in CodeSandbox](https://img.shields.io/badge/Open%20in-CodeSandbox-blue?logo=codesandbox)](https://codesandbox.io/p/github/opengeos/maplibre-gl-usgs-lidar)
-[![Open in StackBlitz](https://img.shields.io/badge/Open%20in-StackBlitz-blue?logo=stackblitz)](https://stackblitz.com/github/opengeos/maplibre-gl-usgs-lidar)
 
 ## Features
 
-- Search USGS 3DEP LiDAR data by map extent or custom bounding box
-- Supports two data sources: COPC (Planetary Computer) and EPT (AWS Open Data)
-- View search results with item footprints on the map
-- Load and visualize COPC and EPT point cloud data
-- Dynamic streaming for efficient handling of large datasets
+- Search NOAA Coastal LiDAR data by map extent or custom bounding box
+- Uses EPT (Entwine Point Tiles) format for efficient point cloud streaming
+- View search results with dataset footprints on the map
+- Load and visualize point cloud data with dynamic streaming
 - Customizable color schemes (elevation, intensity, classification, RGB)
 - React components and hooks for easy integration
 - TypeScript support with full type definitions
+- Local caching of STAC catalog for fast searches
 
 ## Installation
 
 ```bash
-npm install maplibre-gl-usgs-lidar maplibre-gl maplibre-gl-lidar
+npm install maplibre-gl-noaa-lidar maplibre-gl maplibre-gl-lidar
 ```
 
 ## Quick Start
@@ -30,25 +28,25 @@ npm install maplibre-gl-usgs-lidar maplibre-gl maplibre-gl-lidar
 
 ```typescript
 import maplibregl from 'maplibre-gl';
-import { UsgsLidarControl } from 'maplibre-gl-usgs-lidar';
+import { NoaaLidarControl } from 'maplibre-gl-noaa-lidar';
 
 // Import styles
 import 'maplibre-gl/dist/maplibre-gl.css';
 import 'maplibre-gl-lidar/style.css';
-import 'maplibre-gl-usgs-lidar/style.css';
+import 'maplibre-gl-noaa-lidar/style.css';
 
-// Create map
+// Create map centered on a coastal area
 const map = new maplibregl.Map({
   container: 'map',
   style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-  center: [-105.27, 40.01],
+  center: [-80.0, 32.8], // South Carolina coast
   zoom: 10,
 });
 
 map.on('load', () => {
-  // Add USGS LiDAR control
-  const control = new UsgsLidarControl({
-    title: 'USGS 3DEP LiDAR',
+  // Add NOAA LiDAR control
+  const control = new NoaaLidarControl({
+    title: 'NOAA Coastal LiDAR',
     collapsed: false,
     maxResults: 50,
   });
@@ -71,17 +69,17 @@ map.on('load', () => {
 ```tsx
 import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
-import { UsgsLidarControlReact, useUsgsLidarState } from 'maplibre-gl-usgs-lidar/react';
+import { NoaaLidarControlReact, useNoaaLidarState } from 'maplibre-gl-noaa-lidar/react';
 
 // Import styles
 import 'maplibre-gl/dist/maplibre-gl.css';
 import 'maplibre-gl-lidar/style.css';
-import 'maplibre-gl-usgs-lidar/style.css';
+import 'maplibre-gl-noaa-lidar/style.css';
 
 function App() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState(null);
-  const { state, toggle } = useUsgsLidarState({ collapsed: false });
+  const { state, toggle } = useNoaaLidarState({ collapsed: false });
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -89,7 +87,7 @@ function App() {
     const mapInstance = new maplibregl.Map({
       container: mapContainer.current,
       style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-      center: [-105.27, 40.01],
+      center: [-80.2, 25.8], // Florida coast
       zoom: 10,
     });
 
@@ -104,9 +102,9 @@ function App() {
     <div style={{ width: '100%', height: '100vh' }}>
       <div ref={mapContainer} style={{ width: '100%', height: '100%' }} />
       {map && (
-        <UsgsLidarControlReact
+        <NoaaLidarControlReact
           map={map}
-          title="USGS LiDAR"
+          title="NOAA Coastal LiDAR"
           collapsed={state.collapsed}
           onSearchComplete={(items) => console.log('Found:', items.length)}
         />
@@ -118,72 +116,108 @@ function App() {
 
 ## API
 
-### UsgsLidarControl
+### NoaaLidarControl
 
 Main control class implementing MapLibre's `IControl` interface.
 
 #### Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `collapsed` | `boolean` | `true` | Start with panel collapsed |
-| `position` | `string` | `'top-right'` | Control position |
-| `title` | `string` | `'USGS 3DEP LiDAR'` | Panel title |
-| `panelWidth` | `number` | `380` | Panel width in pixels |
-| `panelMaxHeight` | `number` | `600` | Panel max height in pixels |
-| `maxResults` | `number` | `50` | Maximum search results |
-| `showFootprints` | `boolean` | `true` | Show item footprints on map |
-| `autoZoomToResults` | `boolean` | `true` | Auto-zoom to results |
-| `lidarControlOptions` | `object` | `{}` | Options for internal LidarControl |
+| Option                | Type      | Default                | Description                       |
+| --------------------- | --------- | ---------------------- | --------------------------------- |
+| `collapsed`           | `boolean` | `true`                 | Start with panel collapsed        |
+| `position`            | `string`  | `'top-right'`          | Control position                  |
+| `title`               | `string`  | `'NOAA Coastal LiDAR'` | Panel title                       |
+| `panelWidth`          | `number`  | `380`                  | Panel width in pixels             |
+| `maxHeight`           | `number`  | `600`                  | Panel max height in pixels        |
+| `maxResults`          | `number`  | `50`                   | Maximum search results            |
+| `showFootprints`      | `boolean` | `true`                 | Show dataset footprints on map    |
+| `autoZoomToResults`   | `boolean` | `true`                 | Auto-zoom to results              |
+| `stacCatalogUrl`      | `string`  | NOAA catalog           | Custom STAC catalog URL           |
+| `cacheDuration`       | `number`  | `604800000`            | Cache duration (7 days in ms)     |
+| `lidarControlOptions` | `object`  | `{}`                   | Options for internal LidarControl |
 
 #### Methods
 
-| Method | Description |
-|--------|-------------|
-| `searchByExtent()` | Search by current map extent |
-| `searchByBbox(bbox)` | Search by bounding box |
-| `startDrawing()` | Start drawing mode |
-| `stopDrawing()` | Stop drawing mode |
-| `selectItem(item)` | Select an item |
-| `deselectItem(item)` | Deselect an item |
-| `loadItem(item)` | Load item's COPC data |
-| `loadSelectedItems()` | Load all selected items |
-| `unloadItem(itemId)` | Unload an item |
-| `clearResults()` | Clear search results |
-| `clearLoadedItems()` | Clear loaded items |
-| `toggle()` | Toggle panel open/closed |
-| `expand()` | Expand panel |
-| `collapse()` | Collapse panel |
+| Method                | Description                        |
+| --------------------- | ---------------------------------- |
+| `searchByExtent()`    | Search by current map extent       |
+| `searchByBbox(bbox)`  | Search by bounding box             |
+| `startDrawing()`      | Start drawing mode                 |
+| `stopDrawing()`       | Stop drawing mode                  |
+| `selectItem(item)`    | Select an item                     |
+| `deselectItem(item)`  | Deselect an item                   |
+| `loadItem(item)`      | Load item's EPT data               |
+| `loadSelectedItems()` | Load all selected items            |
+| `unloadItem(itemId)`  | Unload an item                     |
+| `clearResults()`      | Clear search results               |
+| `clearLoadedItems()`  | Clear loaded items                 |
+| `toggle()`            | Toggle panel open/closed           |
+| `expand()`            | Expand panel                       |
+| `collapse()`          | Collapse panel                     |
+| `getState()`          | Get current control state          |
+| `getLidarControl()`   | Get internal LidarControl instance |
 
 #### Events
 
-| Event | Description |
-|-------|-------------|
-| `collapse` | Panel collapsed |
-| `expand` | Panel expanded |
-| `statechange` | State changed |
-| `searchstart` | Search started |
-| `searchcomplete` | Search completed |
-| `searcherror` | Search error |
-| `loadstart` | Loading started |
-| `loadcomplete` | Loading completed |
-| `loaderror` | Loading error |
-| `drawstart` | Drawing started |
-| `drawend` | Drawing ended |
+| Event            | Description       |
+| ---------------- | ----------------- |
+| `collapse`       | Panel collapsed   |
+| `expand`         | Panel expanded    |
+| `statechange`    | State changed     |
+| `searchstart`    | Search started    |
+| `searchcomplete` | Search completed  |
+| `searcherror`    | Search error      |
+| `loadstart`      | Loading started   |
+| `loadcomplete`   | Loading completed |
+| `loaderror`      | Loading error     |
+| `unload`         | Item unloaded     |
+| `drawstart`      | Drawing started   |
+| `drawend`        | Drawing ended     |
 
 ### StacSearcher
 
-STAC API client for searching Planetary Computer.
+STAC catalog client for searching NOAA Coastal LiDAR data.
 
 ```typescript
-import { StacSearcher } from 'maplibre-gl-usgs-lidar';
+import { StacSearcher } from 'maplibre-gl-noaa-lidar';
 
 const searcher = new StacSearcher();
-const results = await searcher.search({
-  bbox: [-123, 44, -122, 45],
-  limit: 25,
-});
+const results = await searcher.searchByExtent(
+  [-80, 32, -79, 33], // bbox: [west, south, east, north]
+  25 // limit
+);
+
+// Get EPT URL for a specific item
+const eptUrl = await searcher.getEptUrl(results.features[0]);
 ```
+
+### NoaaLidarLayerAdapter
+
+Adapter for integrating with [maplibre-gl-layer-control](https://github.com/opengeos/maplibre-gl-layer-control).
+
+```typescript
+import { NoaaLidarControl, NoaaLidarLayerAdapter } from 'maplibre-gl-noaa-lidar';
+import { LayerControl } from 'maplibre-gl-layer-control';
+
+const noaaControl = new NoaaLidarControl({ ... });
+map.addControl(noaaControl, 'top-right');
+
+const adapter = new NoaaLidarLayerAdapter(noaaControl);
+const layerControl = new LayerControl({
+  customLayerAdapters: [adapter],
+});
+map.addControl(layerControl, 'top-left');
+```
+
+## Data Source
+
+This plugin uses NOAA Coastal LiDAR data from AWS Open Data:
+
+- **Data**: [NOAA Coastal LiDAR](https://registry.opendata.aws/noaa-coastal-lidar/)
+- **Format**: EPT (Entwine Point Tiles)
+- **STAC Catalog**: `https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/entwine/stac/catalog.json`
+
+The data covers coastal areas of the United States and includes bathymetric and topographic LiDAR surveys.
 
 ## Docker
 
@@ -193,38 +227,23 @@ The examples can be run using Docker. The image is automatically built and publi
 
 ```bash
 # Pull the latest image
-docker pull ghcr.io/opengeos/maplibre-gl-usgs-lidar:latest
+docker pull ghcr.io/opengeos/maplibre-gl-noaa-lidar:latest
 
 # Run the container
-docker run -p 8080:80 ghcr.io/opengeos/maplibre-gl-usgs-lidar:latest
+docker run -p 8080:80 ghcr.io/opengeos/maplibre-gl-noaa-lidar:latest
 ```
 
-Then open http://localhost:8080/maplibre-gl-usgs-lidar/ in your browser to view the examples.
+Then open http://localhost:8080/maplibre-gl-noaa-lidar/ in your browser.
 
 ### Build Locally
 
 ```bash
 # Build the image
-docker build -t maplibre-gl-usgs-lidar .
+docker build -t maplibre-gl-noaa-lidar .
 
 # Run the container
-docker run -p 8080:80 maplibre-gl-usgs-lidar
+docker run -p 8080:80 maplibre-gl-noaa-lidar
 ```
-
-### Available Tags
-
-| Tag | Description |
-|-----|-------------|
-| `latest` | Latest release |
-| `x.y.z` | Specific version (e.g., `1.0.0`) |
-| `x.y` | Minor version (e.g., `1.0`) |
-
-## Data Sources
-
-This plugin supports two data sources for USGS 3DEP LiDAR data:
-
-- **COPC (Cloud Optimized Point Cloud)**: [USGS 3DEP LiDAR COPC](https://planetarycomputer.microsoft.com/dataset/3dep-lidar-copc) from [Microsoft Planetary Computer](https://planetarycomputer.microsoft.com/)
-- **EPT (Entwine Point Tiles)**: [USGS LiDAR](https://registry.opendata.aws/usgs-lidar/) from [AWS Open Data](https://aws.amazon.com/opendata/) via [hobuinc/usgs-lidar](https://github.com/hobuinc/usgs-lidar)
 
 ## Dependencies
 

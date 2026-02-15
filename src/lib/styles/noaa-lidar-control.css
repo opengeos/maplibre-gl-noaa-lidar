@@ -1,12 +1,12 @@
-/* USGS LiDAR Control Styles */
+/* NOAA Coastal LiDAR Control Styles */
 
 /* Control button */
-.usgs-lidar-control {
+.noaa-lidar-control {
   background: #fff;
   border-radius: 4px;
 }
 
-.usgs-lidar-control-toggle {
+.noaa-lidar-control-toggle {
   width: 29px;
   height: 29px;
   padding: 0;
@@ -18,24 +18,24 @@
   justify-content: center;
 }
 
-.usgs-lidar-control-toggle:hover {
+.noaa-lidar-control-toggle:hover {
   background-color: rgba(0, 0, 0, 0.05);
 }
 
-.usgs-lidar-control-icon {
+.noaa-lidar-control-icon {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.usgs-lidar-control-icon svg {
+.noaa-lidar-control-icon svg {
   width: 22px;
   height: 22px;
   stroke: #333;
 }
 
 /* Panel */
-.usgs-lidar-control-panel {
+.noaa-lidar-control-panel {
   position: absolute;
   background: #fff;
   border-radius: 8px;
@@ -48,12 +48,12 @@
   font-size: 13px;
 }
 
-.usgs-lidar-control-panel.expanded {
+.noaa-lidar-control-panel.expanded {
   display: flex;
 }
 
 /* Header */
-.usgs-lidar-control-header {
+.noaa-lidar-control-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -62,13 +62,13 @@
   border-bottom: 1px solid #e9ecef;
 }
 
-.usgs-lidar-control-title {
+.noaa-lidar-control-title {
   font-weight: 600;
   color: #333;
   font-size: 14px;
 }
 
-.usgs-lidar-control-close {
+.noaa-lidar-control-close {
   width: 24px;
   height: 24px;
   padding: 0;
@@ -83,28 +83,28 @@
   border-radius: 4px;
 }
 
-.usgs-lidar-control-close:hover {
+.noaa-lidar-control-close:hover {
   background-color: rgba(0, 0, 0, 0.08);
   color: #333;
 }
 
 /* Panel content */
-.usgs-lidar-panel-content {
+.noaa-lidar-panel-content {
   padding: 0;
   overflow-y: auto;
   flex: 1;
 }
 
 /* Sections */
-.usgs-lidar-section {
+.noaa-lidar-section {
   border-bottom: 1px solid #e9ecef;
 }
 
-.usgs-lidar-section:last-child {
+.noaa-lidar-section:last-child {
   border-bottom: none;
 }
 
-.usgs-lidar-section-header {
+.noaa-lidar-section-header {
   padding: 10px 16px;
   font-weight: 600;
   color: #555;
@@ -114,28 +114,28 @@
   background: #f8f9fa;
 }
 
-.usgs-lidar-section-header span {
+.noaa-lidar-section-header span {
   font-weight: 400;
   color: #888;
   margin-left: 4px;
 }
 
-.usgs-lidar-section-content {
+.noaa-lidar-section-content {
   padding: 12px 16px;
 }
 
 /* Buttons */
-.usgs-lidar-button-row {
+.noaa-lidar-button-row {
   display: flex;
   gap: 8px;
   margin-bottom: 8px;
 }
 
-.usgs-lidar-button-row:last-child {
+.noaa-lidar-button-row:last-child {
   margin-bottom: 0;
 }
 
-.usgs-lidar-btn {
+.noaa-lidar-btn {
   flex: 1;
   padding: 8px 12px;
   border: none;
@@ -146,44 +146,44 @@
   transition: background-color 0.15s, opacity 0.15s;
 }
 
-.usgs-lidar-btn:disabled {
+.noaa-lidar-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.usgs-lidar-btn-primary {
+.noaa-lidar-btn-primary {
   background: #4a90d9;
   color: white;
 }
 
-.usgs-lidar-btn-primary:hover:not(:disabled) {
+.noaa-lidar-btn-primary:hover:not(:disabled) {
   background: #3a7fc8;
 }
 
-.usgs-lidar-btn-secondary {
+.noaa-lidar-btn-secondary {
   background: #e9ecef;
   color: #495057;
 }
 
-.usgs-lidar-btn-secondary:hover:not(:disabled) {
+.noaa-lidar-btn-secondary:hover:not(:disabled) {
   background: #dee2e6;
 }
 
-.usgs-lidar-btn-danger {
+.noaa-lidar-btn-danger {
   background: #dc3545;
   color: white;
 }
 
-.usgs-lidar-btn-danger:hover:not(:disabled) {
+.noaa-lidar-btn-danger:hover:not(:disabled) {
   background: #c82333;
 }
 
-.usgs-lidar-btn-full {
+.noaa-lidar-btn-full {
   flex: 1;
   width: 100%;
 }
 
-.usgs-lidar-btn-icon {
+.noaa-lidar-btn-icon {
   width: 28px;
   height: 28px;
   padding: 0;
@@ -200,20 +200,20 @@
   flex-shrink: 0;
 }
 
-.usgs-lidar-btn-icon:hover {
+.noaa-lidar-btn-icon:hover {
   background: #f8f9fa;
 }
 
-.usgs-lidar-btn-remove {
+.noaa-lidar-btn-remove {
   color: #dc3545;
 }
 
-.usgs-lidar-btn-remove:hover {
+.noaa-lidar-btn-remove:hover {
   background: #fff5f5;
 }
 
 /* Bbox info */
-.usgs-lidar-bbox-info {
+.noaa-lidar-bbox-info {
   padding: 8px 10px;
   background: #e7f5ff;
   border-radius: 4px;
@@ -224,7 +224,7 @@
 }
 
 /* Loading */
-.usgs-lidar-loading {
+.noaa-lidar-loading {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -233,23 +233,23 @@
   font-size: 13px;
 }
 
-.usgs-lidar-spinner {
+.noaa-lidar-spinner {
   width: 16px;
   height: 16px;
   border: 2px solid #e9ecef;
   border-top-color: #4a90d9;
   border-radius: 50%;
-  animation: usgs-lidar-spin 0.8s linear infinite;
+  animation: noaa-lidar-spin 0.8s linear infinite;
 }
 
-@keyframes usgs-lidar-spin {
+@keyframes noaa-lidar-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
 /* Error */
-.usgs-lidar-error {
+.noaa-lidar-error {
   padding: 8px 10px;
   background: #fff5f5;
   border-radius: 4px;
@@ -258,7 +258,7 @@
 }
 
 /* Results list */
-.usgs-lidar-results-list {
+.noaa-lidar-results-list {
   max-height: 200px;
   overflow-y: auto;
   margin-bottom: 8px;
@@ -266,7 +266,7 @@
   border-radius: 6px;
 }
 
-.usgs-lidar-result-item {
+.noaa-lidar-result-item {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -275,35 +275,35 @@
   transition: background-color 0.15s;
 }
 
-.usgs-lidar-result-item:last-child {
+.noaa-lidar-result-item:last-child {
   border-bottom: none;
 }
 
-.usgs-lidar-result-item:hover {
+.noaa-lidar-result-item:hover {
   background: #f8f9fa;
 }
 
-.usgs-lidar-result-item.selected {
+.noaa-lidar-result-item.selected {
   background: #e7f5ff;
 }
 
-.usgs-lidar-result-item.loaded {
+.noaa-lidar-result-item.loaded {
   opacity: 0.7;
 }
 
-.usgs-lidar-result-item input[type="checkbox"] {
+.noaa-lidar-result-item input[type="checkbox"] {
   width: 16px;
   height: 16px;
   cursor: pointer;
   flex-shrink: 0;
 }
 
-.usgs-lidar-result-info {
+.noaa-lidar-result-info {
   flex: 1;
   min-width: 0;
 }
 
-.usgs-lidar-result-name {
+.noaa-lidar-result-name {
   font-size: 12px;
   font-weight: 500;
   color: #333;
@@ -312,12 +312,12 @@
   text-overflow: ellipsis;
 }
 
-.usgs-lidar-result-meta {
+.noaa-lidar-result-meta {
   font-size: 11px;
   color: #868e96;
 }
 
-.usgs-lidar-loaded-badge {
+.noaa-lidar-loaded-badge {
   font-size: 10px;
   padding: 2px 6px;
   background: #d3f9d8;
@@ -327,11 +327,11 @@
 }
 
 /* Loaded list */
-.usgs-lidar-loaded-list {
+.noaa-lidar-loaded-list {
   margin-bottom: 10px;
 }
 
-.usgs-lidar-loaded-item {
+.noaa-lidar-loaded-item {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -339,11 +339,11 @@
   border-bottom: 1px solid #f1f3f5;
 }
 
-.usgs-lidar-loaded-item:last-child {
+.noaa-lidar-loaded-item:last-child {
   border-bottom: none;
 }
 
-.usgs-lidar-loaded-name {
+.noaa-lidar-loaded-name {
   flex: 1;
   font-size: 12px;
   color: #333;
@@ -352,32 +352,32 @@
   text-overflow: ellipsis;
 }
 
-.usgs-lidar-loaded-points {
+.noaa-lidar-loaded-points {
   font-size: 11px;
   color: #868e96;
   flex-shrink: 0;
 }
 
 /* Visualization controls */
-.usgs-lidar-control-row {
+.noaa-lidar-control-row {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 12px;
 }
 
-.usgs-lidar-control-row:last-child {
+.noaa-lidar-control-row:last-child {
   margin-bottom: 0;
 }
 
-.usgs-lidar-control-row label {
+.noaa-lidar-control-row label {
   width: 70px;
   font-size: 12px;
   color: #555;
   flex-shrink: 0;
 }
 
-.usgs-lidar-select {
+.noaa-lidar-select {
   flex: 1;
   padding: 6px 8px;
   border: 1px solid #dee2e6;
@@ -387,12 +387,12 @@
   cursor: pointer;
 }
 
-.usgs-lidar-select:focus {
+.noaa-lidar-select:focus {
   outline: none;
   border-color: #4a90d9;
 }
 
-.usgs-lidar-slider {
+.noaa-lidar-slider {
   flex: 1;
   height: 4px;
   -webkit-appearance: none;
@@ -402,7 +402,7 @@
   outline: none;
 }
 
-.usgs-lidar-slider::-webkit-slider-thumb {
+.noaa-lidar-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 14px;
@@ -412,7 +412,7 @@
   cursor: pointer;
 }
 
-.usgs-lidar-slider::-moz-range-thumb {
+.noaa-lidar-slider::-moz-range-thumb {
   width: 14px;
   height: 14px;
   background: #4a90d9;
@@ -421,7 +421,7 @@
   border: none;
 }
 
-.usgs-lidar-slider-value {
+.noaa-lidar-slider-value {
   width: 30px;
   text-align: right;
   font-size: 12px;
@@ -429,12 +429,12 @@
   flex-shrink: 0;
 }
 
-.usgs-lidar-slider-value-wide {
+.noaa-lidar-slider-value-wide {
   width: 55px;
 }
 
 /* Notifications */
-.usgs-lidar-notification {
+.noaa-lidar-notification {
   position: absolute;
   bottom: 10px;
   left: 50%;
@@ -447,14 +447,14 @@
   font-weight: 500;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   z-index: 10;
-  animation: usgs-lidar-notification-in 0.2s ease-out;
+  animation: noaa-lidar-notification-in 0.2s ease-out;
 }
 
-.usgs-lidar-notification.error {
+.noaa-lidar-notification.error {
   background: #c92a2a;
 }
 
-@keyframes usgs-lidar-notification-in {
+@keyframes noaa-lidar-notification-in {
   from {
     opacity: 0;
     transform: translateX(-50%) translateY(10px);
@@ -466,7 +466,7 @@
 }
 
 /* Checkbox rows */
-.usgs-lidar-checkbox-row {
+.noaa-lidar-checkbox-row {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -474,26 +474,26 @@
   cursor: pointer;
 }
 
-.usgs-lidar-checkbox-row input[type="checkbox"] {
+.noaa-lidar-checkbox-row input[type="checkbox"] {
   width: 16px;
   height: 16px;
   cursor: pointer;
   flex-shrink: 0;
 }
 
-.usgs-lidar-checkbox-row label {
+.noaa-lidar-checkbox-row label {
   font-size: 12px;
   color: #555;
   cursor: pointer;
   flex: 1;
 }
 
-.usgs-lidar-checkbox-group {
+.noaa-lidar-checkbox-group {
   margin-bottom: 12px;
 }
 
 /* Dual range slider row */
-.usgs-lidar-dual-range-row {
+.noaa-lidar-dual-range-row {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -501,20 +501,20 @@
   margin-bottom: 12px;
 }
 
-.usgs-lidar-dual-range-row label {
+.noaa-lidar-dual-range-row label {
   width: 70px;
   font-size: 12px;
   color: #555;
   flex-shrink: 0;
 }
 
-.usgs-lidar-dual-range-slider {
+.noaa-lidar-dual-range-slider {
   flex: 1;
   position: relative;
   height: 20px;
 }
 
-.usgs-lidar-dual-range-track {
+.noaa-lidar-dual-range-track {
   position: absolute;
   top: 50%;
   left: 0;
@@ -526,7 +526,7 @@
   pointer-events: none;
 }
 
-.usgs-lidar-dual-range-fill {
+.noaa-lidar-dual-range-fill {
   position: absolute;
   top: 50%;
   height: 4px;
@@ -538,7 +538,7 @@
   right: 0;
 }
 
-.usgs-lidar-dual-range-input {
+.noaa-lidar-dual-range-input {
   position: absolute;
   top: 0;
   left: 0;
@@ -552,7 +552,7 @@
   padding: 0;
 }
 
-.usgs-lidar-dual-range-input::-webkit-slider-thumb {
+.noaa-lidar-dual-range-input::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 16px;
@@ -565,7 +565,7 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-.usgs-lidar-dual-range-input::-moz-range-thumb {
+.noaa-lidar-dual-range-input::-moz-range-thumb {
   width: 16px;
   height: 16px;
   background: #4a90d9;
@@ -576,17 +576,17 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-.usgs-lidar-dual-range-input::-webkit-slider-runnable-track {
+.noaa-lidar-dual-range-input::-webkit-slider-runnable-track {
   height: 4px;
   background: transparent;
 }
 
-.usgs-lidar-dual-range-input::-moz-range-track {
+.noaa-lidar-dual-range-input::-moz-range-track {
   height: 4px;
   background: transparent;
 }
 
-.usgs-lidar-dual-range-value {
+.noaa-lidar-dual-range-value {
   width: 75px;
   text-align: right;
   font-size: 12px;
@@ -595,14 +595,14 @@
 }
 
 /* Classification legend */
-.usgs-lidar-classification-legend {
+.noaa-lidar-classification-legend {
   margin-bottom: 12px;
   border: 1px solid #e9ecef;
   border-radius: 6px;
   overflow: hidden;
 }
 
-.usgs-lidar-classification-header {
+.noaa-lidar-classification-header {
   display: flex;
   gap: 6px;
   padding: 8px 10px;
@@ -610,7 +610,7 @@
   border-bottom: 1px solid #e9ecef;
 }
 
-.usgs-lidar-btn-small {
+.noaa-lidar-btn-small {
   padding: 4px 8px;
   border: 1px solid #dee2e6;
   border-radius: 4px;
@@ -621,17 +621,17 @@
   transition: background-color 0.15s;
 }
 
-.usgs-lidar-btn-small:hover {
+.noaa-lidar-btn-small:hover {
   background: #f8f9fa;
 }
 
-.usgs-lidar-classification-list {
+.noaa-lidar-classification-list {
   max-height: 180px;
   overflow-y: auto;
   padding: 4px 0;
 }
 
-.usgs-lidar-classification-item {
+.noaa-lidar-classification-item {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -640,18 +640,18 @@
   transition: background-color 0.15s;
 }
 
-.usgs-lidar-classification-item:hover {
+.noaa-lidar-classification-item:hover {
   background: #f8f9fa;
 }
 
-.usgs-lidar-classification-item input[type="checkbox"] {
+.noaa-lidar-classification-item input[type="checkbox"] {
   width: 14px;
   height: 14px;
   cursor: pointer;
   flex-shrink: 0;
 }
 
-.usgs-lidar-classification-swatch {
+.noaa-lidar-classification-swatch {
   width: 16px;
   height: 16px;
   border-radius: 3px;
@@ -659,14 +659,14 @@
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.usgs-lidar-classification-label {
+.noaa-lidar-classification-label {
   font-size: 12px;
   color: #333;
   cursor: pointer;
   flex: 1;
 }
 
-.usgs-lidar-classification-empty {
+.noaa-lidar-classification-empty {
   padding: 12px 10px;
   text-align: center;
   color: #868e96;
@@ -675,7 +675,7 @@
 }
 
 /* Data source toggle */
-.usgs-lidar-source-toggle {
+.noaa-lidar-source-toggle {
   display: flex;
   gap: 16px;
   margin-bottom: 12px;
@@ -683,7 +683,7 @@
   border-bottom: 1px solid #e9ecef;
 }
 
-.usgs-lidar-source-option {
+.noaa-lidar-source-option {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -692,19 +692,19 @@
   cursor: pointer;
 }
 
-.usgs-lidar-source-option input[type="radio"] {
+.noaa-lidar-source-option input[type="radio"] {
   width: 14px;
   height: 14px;
   cursor: pointer;
   margin: 0;
 }
 
-.usgs-lidar-source-option:hover {
+.noaa-lidar-source-option:hover {
   color: #333;
 }
 
 /* Colormap section */
-.usgs-lidar-colormap-section {
+.noaa-lidar-colormap-section {
   margin-bottom: 12px;
   padding: 10px;
   background: #f8f9fa;
@@ -713,7 +713,7 @@
 }
 
 /* Colorbar container with min/max labels */
-.usgs-lidar-colorbar-container {
+.noaa-lidar-colorbar-container {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -721,53 +721,53 @@
   margin-bottom: 8px;
 }
 
-.usgs-lidar-colorbar-canvas {
+.noaa-lidar-colorbar-canvas {
   flex: 1;
   height: 16px;
   border-radius: 4px;
   border: 1px solid #e9ecef;
 }
 
-.usgs-lidar-colorbar-label {
+.noaa-lidar-colorbar-label {
   font-size: 11px;
   color: #666;
   min-width: 40px;
 }
 
-.usgs-lidar-colorbar-min {
+.noaa-lidar-colorbar-min {
   text-align: left;
 }
 
-.usgs-lidar-colorbar-max {
+.noaa-lidar-colorbar-max {
   text-align: right;
 }
 
 /* Color range section */
-.usgs-lidar-color-range-section {
+.noaa-lidar-color-range-section {
   margin-top: 10px;
 }
 
-.usgs-lidar-color-range-header {
+.noaa-lidar-color-range-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
 }
 
-.usgs-lidar-color-range-header span {
+.noaa-lidar-color-range-header span {
   font-size: 12px;
   font-weight: 500;
   color: #555;
 }
 
 /* Color range mode radio buttons */
-.usgs-lidar-color-range-mode {
+.noaa-lidar-color-range-mode {
   display: flex;
   gap: 16px;
   margin-bottom: 8px;
 }
 
-.usgs-lidar-radio-option {
+.noaa-lidar-radio-option {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -776,50 +776,50 @@
   cursor: pointer;
 }
 
-.usgs-lidar-radio-option input[type="radio"] {
+.noaa-lidar-radio-option input[type="radio"] {
   width: 14px;
   height: 14px;
   cursor: pointer;
   margin: 0;
 }
 
-.usgs-lidar-radio-option:hover {
+.noaa-lidar-radio-option:hover {
   color: #333;
 }
 
 /* Info button */
-.usgs-lidar-btn-info {
+.noaa-lidar-btn-info {
   color: #4a90d9;
 }
 
-.usgs-lidar-btn-info:hover {
+.noaa-lidar-btn-info:hover {
   background: #e7f5ff;
 }
 
 /* Collapsible section header */
-.usgs-lidar-section-collapsible {
+.noaa-lidar-section-collapsible {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.usgs-lidar-section-toggle {
+.noaa-lidar-section-toggle {
   font-size: 10px;
   color: #888;
   transition: transform 0.15s;
 }
 
-.usgs-lidar-section-body {
+.noaa-lidar-section-body {
   padding: 0;
 }
 
 /* Cross-section section */
-.usgs-lidar-crosssection-section .usgs-lidar-section-body {
+.noaa-lidar-crosssection-section .noaa-lidar-section-body {
   padding: 12px 16px;
 }
 
 /* Cross-section panel container - ensure proper styling for embedded panel */
-.usgs-lidar-crosssection-section .lidar-crosssection-panel {
+.noaa-lidar-crosssection-section .lidar-crosssection-panel {
   padding: 0;
   background: transparent;
   border: none;

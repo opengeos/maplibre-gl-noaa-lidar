@@ -1,36 +1,37 @@
 // Import styles
-import './lib/styles/usgs-lidar-control.css';
+import './lib/styles/noaa-lidar-control.css';
 
 // Main entry point - Core exports
-export { UsgsLidarControl } from './lib/core/UsgsLidarControl';
+export { NoaaLidarControl } from './lib/core/NoaaLidarControl';
 
 // Adapter exports
-export { UsgsLidarLayerAdapter } from './lib/adapters';
+export { NoaaLidarLayerAdapter } from './lib/adapters';
 
 // STAC exports
 export { StacSearcher } from './lib/stac';
-
-// EPT exports
-export { EptSearcher } from './lib/ept';
 
 // Results exports
 export { FootprintLayer } from './lib/results';
 
 // Type exports
 export type {
-  UsgsLidarControlOptions,
-  UsgsLidarState,
-  UsgsLidarControlEvent,
-  UsgsLidarEventHandler,
-  UsgsLidarEventData,
+  // Primary types
+  NoaaLidarControlOptions,
+  NoaaLidarState,
+  NoaaLidarControlEvent,
+  NoaaLidarEventHandler,
+  NoaaLidarEventData,
+  NoaaLidarControlReactProps,
+  // STAC types
   StacItem,
   StacSearchParams,
   StacSearchResponse,
   StacAsset,
   StacLink,
+  // Search types
   SearchMode,
   LoadedItemInfo,
-  // New types for EPT support
+  // EPT types
   DataSourceType,
   EptFeature,
   EptSearchResponse,
@@ -65,7 +66,7 @@ export {
   truncate,
   getItemShortName,
   getBboxFromGeometry,
-  // New converter utilities
+  // Converter utilities
   stacToUnified,
   eptToUnified,
   getUnifiedItemName,

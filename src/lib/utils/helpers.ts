@@ -136,8 +136,8 @@ export function truncate(str: string, maxLength: number): string {
  * @returns Shortened name
  */
 export function getItemShortName(itemId: string, maxLength: number = 30): string {
-  // Remove common prefixes like USGS_LPC_
-  let name = itemId.replace(/^USGS_LPC_/, '').replace(/^3DEP_/, '');
+  // Remove common prefixes like DigitalCoast_mission_
+  let name = itemId.replace(/^DigitalCoast_mission_/, 'Mission ');
   return truncate(name, maxLength);
 }
 

@@ -1,7 +1,7 @@
 {
-  "name": "maplibre-gl-usgs-lidar",
-  "version": "0.7.3",
-  "description": "A MapLibre GL JS plugin for searching and visualizing USGS 3DEP LiDAR COPC data from Planetary Computer",
+  "name": "maplibre-gl-noaa-lidar",
+  "version": "0.1.0",
+  "description": "A MapLibre GL JS plugin for searching and visualizing NOAA Coastal LiDAR EPT data from AWS Open Data",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -27,7 +27,7 @@
         "default": "./dist/react.cjs"
       }
     },
-    "./style.css": "./dist/maplibre-gl-usgs-lidar.css"
+    "./style.css": "./dist/maplibre-gl-noaa-lidar.css"
   },
   "files": [
     "dist",
@@ -53,11 +53,10 @@
     "maplibre",
     "maplibre-gl",
     "lidar",
-    "usgs",
-    "3dep",
-    "copc",
+    "noaa",
+    "coastal",
+    "ept",
     "point-cloud",
-    "planetary-computer",
     "stac",
     "visualization",
     "geospatial",
@@ -68,7 +67,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/opengeos/maplibre-gl-usgs-lidar.git"
+    "url": "https://github.com/opengeos/maplibre-gl-noaa-lidar.git"
   },
   "peerDependencies": {
     "maplibre-gl": ">=3.0.0",

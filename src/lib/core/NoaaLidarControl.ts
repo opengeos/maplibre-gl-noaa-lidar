@@ -8,52 +8,48 @@ import type {
   ElevationProfile,
 } from 'maplibre-gl-lidar';
 import type {
-  UsgsLidarControlOptions,
-  UsgsLidarState,
-  UsgsLidarControlEvent,
-  UsgsLidarEventHandler,
-  UsgsLidarEventData,
+  NoaaLidarControlOptions,
+  NoaaLidarState,
+  NoaaLidarControlEvent,
+  NoaaLidarEventHandler,
+  NoaaLidarEventData,
   StacItem,
-  EptFeature,
   LoadedItemInfo,
   UnifiedSearchItem,
-  DataSourceType,
 } from './types';
 import { StacSearcher } from '../stac/StacSearcher';
-import { EptSearcher } from '../ept/EptSearcher';
 import { FootprintLayer } from '../results/FootprintLayer';
 import { PanelBuilder } from '../gui/PanelBuilder';
-import { getItemShortName, stacToUnified, eptToUnified } from '../utils';
+import { getItemShortName, stacToUnified } from '../utils';
 
 const DEFAULT_OPTIONS: Required<
-  Omit<UsgsLidarControlOptions, 'className' | 'lidarControlOptions'>
+  Omit<NoaaLidarControlOptions, 'className' | 'lidarControlOptions'>
 > = {
   collapsed: true,
   position: 'top-right',
-  title: 'USGS 3DEP LiDAR',
+  title: 'NOAA Coastal LiDAR',
   panelWidth: 380,
   maxHeight: 500,
   maxResults: 50,
   showFootprints: true,
   autoZoomToResults: true,
-  defaultDataSource: 'ept',
-  eptBoundaryUrl:
-    'https://raw.githubusercontent.com/hobuinc/usgs-lidar/master/boundaries/boundaries.topojson',
-  cacheDuration: 3 * 24 * 60 * 60 * 1000, // 3 days
+  stacCatalogUrl:
+    'https://noaa-nos-coastal-lidar-pds.s3.us-east-1.amazonaws.com/entwine/stac/catalog.json',
+  cacheDuration: 7 * 24 * 60 * 60 * 1000, // 7 days
 };
 
 // Drawing layer IDs
-const DRAW_SOURCE_ID = 'usgs-lidar-draw-source';
-const DRAW_FILL_LAYER_ID = 'usgs-lidar-draw-fill';
-const DRAW_LINE_LAYER_ID = 'usgs-lidar-draw-line';
+const DRAW_SOURCE_ID = 'noaa-lidar-draw-source';
+const DRAW_FILL_LAYER_ID = 'noaa-lidar-draw-fill';
+const DRAW_LINE_LAYER_ID = 'noaa-lidar-draw-line';
 
 /**
- * A MapLibre GL control for searching and visualizing USGS 3DEP LiDAR data.
+ * A MapLibre GL control for searching and visualizing NOAA Coastal LiDAR data.
  *
  * @example
  * ```typescript
- * const control = new UsgsLidarControl({
- *   title: 'USGS LiDAR',
+ * const control = new NoaaLidarControl({
+ *   title: 'NOAA Coastal LiDAR',
  *   maxResults: 25,
  * });
  * map.addControl(control, 'top-right');
@@ -65,19 +61,18 @@ const DRAW_LINE_LAYER_ID = 'usgs-lidar-draw-line';
  * control.loadItem(item);
  * ```
  */
-export class UsgsLidarControl implements IControl {
+export class NoaaLidarControl implements IControl {
   private _map?: MapLibreMap;
   private _mapContainer?: HTMLElement;
   private _container?: HTMLElement;
   private _panel?: HTMLElement;
-  private _options: Required<Omit<UsgsLidarControlOptions, 'className' | 'lidarControlOptions'>> &
-    Pick<UsgsLidarControlOptions, 'className' | 'lidarControlOptions'>;
-  private _state: UsgsLidarState;
-  private _eventHandlers: Map<UsgsLidarControlEvent, Set<UsgsLidarEventHandler>> = new Map();
+  private _options: Required<Omit<NoaaLidarControlOptions, 'className' | 'lidarControlOptions'>> &
+    Pick<NoaaLidarControlOptions, 'className' | 'lidarControlOptions'>;
+  private _state: NoaaLidarState;
+  private _eventHandlers: Map<NoaaLidarControlEvent, Set<NoaaLidarEventHandler>> = new Map();
 
   // Core components
   private _stacSearcher: StacSearcher;
-  private _eptSearcher: EptSearcher;
   private _footprintLayer?: FootprintLayer;
   private _lidarControl?: LidarControl;
   private _panelBuilder?: PanelBuilder;
@@ -93,22 +88,22 @@ export class UsgsLidarControl implements IControl {
   private _urlToItemId: Map<string, string> = new Map();
 
   /**
-   * Creates a new UsgsLidarControl instance.
+   * Creates a new NoaaLidarControl instance.
    *
    * @param options - Configuration options
    */
-  constructor(options?: Partial<UsgsLidarControlOptions>) {
+  constructor(options?: Partial<NoaaLidarControlOptions>) {
     this._options = { ...DEFAULT_OPTIONS, ...options };
-    this._stacSearcher = new StacSearcher();
-    this._eptSearcher = new EptSearcher(
-      this._options.eptBoundaryUrl,
+    this._stacSearcher = new StacSearcher(
+      this._options.stacCatalogUrl,
+      undefined,
       this._options.cacheDuration
     );
     this._state = {
       collapsed: this._options.collapsed,
       panelWidth: this._options.panelWidth,
       maxHeight: this._options.maxHeight,
-      dataSource: this._options.defaultDataSource,
+      dataSource: 'ept', // NOAA data is always EPT
       searchMode: 'none',
       isDrawing: false,
       drawnBbox: null,
@@ -209,7 +204,7 @@ export class UsgsLidarControl implements IControl {
       });
       this._map.addControl(this._lidarControl, this._options.position);
 
-      // Hide the LidarControl's toggle button since UsgsLidarControl provides its own UI
+      // Hide the LidarControl's toggle button since NoaaLidarControl provides its own UI
       const lidarEl = (this._lidarControl as any)._container as HTMLElement;
       if (lidarEl) lidarEl.style.display = 'none';
 
@@ -327,7 +322,7 @@ export class UsgsLidarControl implements IControl {
   /**
    * Gets the current control state.
    */
-  getState(): UsgsLidarState {
+  getState(): NoaaLidarState {
     return {
       ...this._state,
       selectedItems: new Set(this._state.selectedItems),
@@ -340,7 +335,7 @@ export class UsgsLidarControl implements IControl {
    *
    * @param newState - Partial state to merge
    */
-  setState(newState: Partial<UsgsLidarState>): void {
+  setState(newState: Partial<NoaaLidarState>): void {
     this._state = { ...this._state, ...newState };
     this._panelBuilder?.updateState(this._state);
     this._emit('statechange');
@@ -384,7 +379,7 @@ export class UsgsLidarControl implements IControl {
    * @param event - Event type
    * @param handler - Handler function
    */
-  on(event: UsgsLidarControlEvent, handler: UsgsLidarEventHandler): void {
+  on(event: NoaaLidarControlEvent, handler: NoaaLidarEventHandler): void {
     if (!this._eventHandlers.has(event)) {
       this._eventHandlers.set(event, new Set());
     }
@@ -397,7 +392,7 @@ export class UsgsLidarControl implements IControl {
    * @param event - Event type
    * @param handler - Handler function
    */
-  off(event: UsgsLidarControlEvent, handler: UsgsLidarEventHandler): void {
+  off(event: NoaaLidarControlEvent, handler: NoaaLidarEventHandler): void {
     this._eventHandlers.get(event)?.delete(handler);
   }
 
@@ -464,20 +459,10 @@ export class UsgsLidarControl implements IControl {
     this._emit('searchstart');
 
     try {
-      let items: UnifiedSearchItem[];
-      let totalMatched: number;
-
-      if (this._state.dataSource === 'copc') {
-        // Search COPC from Planetary Computer
-        const response = await this._stacSearcher.searchByExtent(bbox, this._options.maxResults);
-        items = response.features.map(stacToUnified);
-        totalMatched = response.numberMatched ?? response.context?.matched ?? items.length;
-      } else {
-        // Search EPT from AWS S3
-        const response = await this._eptSearcher.searchByExtent(bbox, this._options.maxResults);
-        items = response.features.map(eptToUnified);
-        totalMatched = response.numberMatched ?? items.length;
-      }
+      // Search NOAA STAC catalog
+      const response = await this._stacSearcher.searchByExtent(bbox, this._options.maxResults);
+      const items = response.features.map(stacToUnified);
+      const totalMatched = response.numberMatched ?? response.context?.matched ?? items.length;
 
       this.setState({
         isSearching: false,
@@ -504,25 +489,6 @@ export class UsgsLidarControl implements IControl {
       this._emitWithData('searcherror', { error: err });
       throw err;
     }
-  }
-
-  /**
-   * Sets the data source type.
-   *
-   * @param source - Data source type ('copc' or 'ept')
-   */
-  setDataSource(source: DataSourceType): void {
-    if (this._state.dataSource !== source) {
-      this.clearResults();
-      this.setState({ dataSource: source });
-    }
-  }
-
-  /**
-   * Gets the current data source type.
-   */
-  getDataSource(): DataSourceType {
-    return this._state.dataSource;
   }
 
   /**
@@ -698,15 +664,8 @@ export class UsgsLidarControl implements IControl {
     }
 
     try {
-      let url: string;
-
-      if (item.sourceType === 'copc') {
-        // Get signed COPC URL from Planetary Computer
-        url = await this._stacSearcher.getCopcUrl(item.originalItem as StacItem);
-      } else {
-        // EPT URL is direct (no signing needed)
-        url = (item.originalItem as EptFeature).properties.url;
-      }
+      // Get EPT URL from STAC item
+      const url = await this._stacSearcher.getEptUrl(item.originalItem as StacItem);
 
       // Track URL to item ID mapping
       this._urlToItemId.set(url, item.id);
@@ -784,7 +743,7 @@ export class UsgsLidarControl implements IControl {
           requestAnimationFrame(checkInit);
         } else {
           // Give up waiting and resolve anyway - search will work but footprints may not show
-          console.warn('UsgsLidarControl: Initialization timeout, proceeding without full initialization');
+          console.warn('NoaaLidarControl: Initialization timeout, proceeding without full initialization');
           resolve();
         }
       };
@@ -871,8 +830,6 @@ export class UsgsLidarControl implements IControl {
 
   /**
    * Gets URLs for the selected items.
-   * For COPC items, returns signed URLs from Planetary Computer.
-   * For EPT items, returns direct S3 URLs.
    *
    * @returns Promise resolving to array of URLs
    */
@@ -884,12 +841,7 @@ export class UsgsLidarControl implements IControl {
     const urls: string[] = [];
     for (const item of selectedItems) {
       try {
-        let url: string;
-        if (item.sourceType === 'copc') {
-          url = await this._stacSearcher.getCopcUrl(item.originalItem as StacItem);
-        } else {
-          url = (item.originalItem as EptFeature).properties.url;
-        }
+        const url = await this._stacSearcher.getEptUrl(item.originalItem as StacItem);
         urls.push(url);
       } catch (error) {
         console.error(`Failed to get URL for ${item.id}:`, error);
@@ -900,7 +852,7 @@ export class UsgsLidarControl implements IControl {
   }
 
   /**
-   * Copies signed URLs for selected items to the clipboard.
+   * Copies URLs for selected items to the clipboard.
    */
   async copySignedUrls(): Promise<void> {
     const selectedCount = this._state.selectedItems.size;
@@ -918,7 +870,7 @@ export class UsgsLidarControl implements IControl {
 
       const urlText = urls.join('\n');
       await navigator.clipboard.writeText(urlText);
-      console.log(`Copied ${urls.length} signed URL(s) to clipboard`);
+      console.log(`Copied ${urls.length} URL(s) to clipboard`);
 
       // Show temporary success feedback
       this._showNotification(`Copied ${urls.length} URL(s) to clipboard`);
@@ -929,63 +881,12 @@ export class UsgsLidarControl implements IControl {
   }
 
   /**
-   * Downloads selected COPC files.
-   * Note: Downloads are initiated in new tabs due to browser security restrictions.
-   */
-  async downloadSelected(): Promise<void> {
-    const selectedCount = this._state.selectedItems.size;
-    if (selectedCount === 0) {
-      console.warn('No items selected to download');
-      return;
-    }
-
-    try {
-      const urls = await this.getSignedUrls();
-      if (urls.length === 0) {
-        console.warn('No URLs could be generated for download');
-        return;
-      }
-
-      // For each URL, create a download link
-      for (let i = 0; i < urls.length; i++) {
-        const url = urls[i];
-        const selectedItems = this._state.searchResults.filter((item) =>
-          this._state.selectedItems.has(item.id)
-        );
-        const itemId = selectedItems[i]?.id || `copc-${i}`;
-        const filename = `${itemId}.copc.laz`;
-
-        // Create a temporary link and click it
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // Add a small delay between downloads to prevent browser blocking
-        if (i < urls.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 500));
-        }
-      }
-
-      console.log(`Initiated download of ${urls.length} file(s)`);
-      this._showNotification(`Downloading ${urls.length} file(s)...`);
-    } catch (error) {
-      console.error('Failed to download files:', error);
-      this._showNotification('Failed to download files', true);
-    }
-  }
-
-  /**
    * Shows a temporary notification message.
    */
   private _showNotification(message: string, isError: boolean = false): void {
     // Create notification element
     const notification = document.createElement('div');
-    notification.className = `usgs-lidar-notification${isError ? ' error' : ''}`;
+    notification.className = `noaa-lidar-notification${isError ? ' error' : ''}`;
     notification.textContent = message;
 
     // Add to panel
@@ -1227,42 +1128,40 @@ export class UsgsLidarControl implements IControl {
 
   // ==================== Private Methods ====================
 
-  private _emit(event: UsgsLidarControlEvent): void {
+  private _emit(event: NoaaLidarControlEvent): void {
     const handlers = this._eventHandlers.get(event);
     if (handlers) {
-      const eventData: UsgsLidarEventData = { type: event, state: this.getState() };
+      const eventData: NoaaLidarEventData = { type: event, state: this.getState() };
       handlers.forEach((handler) => handler(eventData));
     }
   }
 
-  private _emitWithData(event: UsgsLidarControlEvent, data: Partial<UsgsLidarEventData>): void {
+  private _emitWithData(event: NoaaLidarControlEvent, data: Partial<NoaaLidarEventData>): void {
     const handlers = this._eventHandlers.get(event);
     if (handlers) {
-      const eventData: UsgsLidarEventData = { type: event, state: this.getState(), ...data };
+      const eventData: NoaaLidarEventData = { type: event, state: this.getState(), ...data };
       handlers.forEach((handler) => handler(eventData));
     }
   }
 
   private _createContainer(): HTMLElement {
     const container = document.createElement('div');
-    container.className = `maplibregl-ctrl maplibregl-ctrl-group usgs-lidar-control${
+    container.className = `maplibregl-ctrl maplibregl-ctrl-group noaa-lidar-control${
       this._options.className ? ` ${this._options.className}` : ''
     }`;
 
     const toggleBtn = document.createElement('button');
-    toggleBtn.className = 'usgs-lidar-control-toggle';
+    toggleBtn.className = 'noaa-lidar-control-toggle';
     toggleBtn.type = 'button';
     toggleBtn.setAttribute('aria-label', this._options.title);
     toggleBtn.innerHTML = `
-      <span class="usgs-lidar-control-icon">
-        <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="1.5" fill="none">
-          <circle cx="12" cy="12" r="2"/>
-          <circle cx="12" cy="5" r="1.5"/>
-          <circle cx="12" cy="19" r="1.5"/>
-          <circle cx="5" cy="12" r="1.5"/>
-          <circle cx="19" cy="12" r="1.5"/>
-          <path d="M4 20 L8 16 M20 4 L16 8"/>
-          <rect x="2" y="2" width="6" height="6" rx="1" stroke-dasharray="2 1"/>
+      <span class="noaa-lidar-control-icon">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#333" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <!-- Spiral wave curl -->
+          <path d="M3 12 C3 6 7 2 12 2 C17 2 19 5 19 8 C19 11 16 12 14 11 C12 10 12 8 14 7"/>
+          <!-- Wave lines below -->
+          <path d="M1 16 C3 14 5 14 7 16 C9 18 11 18 13 16 C15 14 17 14 19 16 C21 18 22 18 23 17"/>
+          <path d="M1 21 C3 19 5 19 7 21 C9 23 11 23 13 21 C15 19 17 19 19 21 C21 23 22 23 23 22"/>
         </svg>
       </span>
     `;
@@ -1274,20 +1173,20 @@ export class UsgsLidarControl implements IControl {
 
   private _createPanel(): HTMLElement {
     const panel = document.createElement('div');
-    panel.className = 'usgs-lidar-control-panel';
+    panel.className = 'noaa-lidar-control-panel';
     panel.style.width = `${this._options.panelWidth}px`;
     panel.style.maxHeight = `${this._options.maxHeight}px`;
 
     // Header
     const header = document.createElement('div');
-    header.className = 'usgs-lidar-control-header';
+    header.className = 'noaa-lidar-control-header';
 
     const title = document.createElement('span');
-    title.className = 'usgs-lidar-control-title';
+    title.className = 'noaa-lidar-control-title';
     title.textContent = this._options.title;
 
     const closeBtn = document.createElement('button');
-    closeBtn.className = 'usgs-lidar-control-close';
+    closeBtn.className = 'noaa-lidar-control-close';
     closeBtn.type = 'button';
     closeBtn.setAttribute('aria-label', 'Close panel');
     closeBtn.innerHTML = '&times;';
@@ -1321,13 +1220,12 @@ export class UsgsLidarControl implements IControl {
         },
         onCopySignedUrls: () => {
           this.copySignedUrls().catch((err) => {
-            console.error('Failed to copy signed URLs:', err);
+            console.error('Failed to copy URLs:', err);
           });
         },
         onDownloadSelected: () => {
-          this.downloadSelected().catch((err) => {
-            console.error('Failed to download selected:', err);
-          });
+          // Download is not applicable for EPT data
+          console.warn('EPT data cannot be downloaded directly');
         },
         onClearResults: () => this.clearResults(),
         onUnloadItem: (itemId) => this.unloadItem(itemId),
@@ -1341,7 +1239,6 @@ export class UsgsLidarControl implements IControl {
         onClassificationToggle: (code, visible) => this.setClassificationVisibility(code, visible),
         onClassificationShowAll: () => this.showAllClassifications(),
         onClassificationHideAll: () => this.hideAllClassifications(),
-        onDataSourceChange: (source) => this.setDataSource(source),
         onColormapChange: (colormap) => this.setColormap(colormap),
         onColorRangeChange: (config) => this.setColorRange(config),
         onShowMetadata: (itemId) => this.showMetadata(itemId),
@@ -1418,7 +1315,7 @@ export class UsgsLidarControl implements IControl {
   private _updatePanelPosition(): void {
     if (!this._container || !this._panel || !this._mapContainer) return;
 
-    const button = this._container.querySelector('.usgs-lidar-control-toggle');
+    const button = this._container.querySelector('.noaa-lidar-control-toggle');
     if (!button) return;
 
     const buttonRect = button.getBoundingClientRect();

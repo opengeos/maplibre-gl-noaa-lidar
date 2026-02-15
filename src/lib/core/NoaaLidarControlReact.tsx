@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
-import type { UsgsLidarControlReactProps } from './types';
-import { UsgsLidarControl } from './UsgsLidarControl';
+import type { NoaaLidarControlReactProps } from './types';
+import { NoaaLidarControl } from './NoaaLidarControl';
 
 /**
- * React wrapper component for UsgsLidarControl.
+ * React wrapper component for NoaaLidarControl.
  *
  * @example
  * ```tsx
@@ -14,9 +14,9 @@ import { UsgsLidarControl } from './UsgsLidarControl';
  *     <div>
  *       <Map onLoad={setMap} />
  *       {map && (
- *         <UsgsLidarControlReact
+ *         <NoaaLidarControlReact
  *           map={map}
- *           title="USGS LiDAR"
+ *           title="NOAA Coastal LiDAR"
  *           onSearchComplete={(items) => console.log('Found:', items.length)}
  *         />
  *       )}
@@ -25,7 +25,7 @@ import { UsgsLidarControl } from './UsgsLidarControl';
  * }
  * ```
  */
-export function UsgsLidarControlReact({
+export function NoaaLidarControlReact({
   map,
   onStateChange,
   onSearchComplete,
@@ -33,15 +33,15 @@ export function UsgsLidarControlReact({
   onError,
   onControlReady,
   ...options
-}: UsgsLidarControlReactProps): null {
-  const controlRef = useRef<UsgsLidarControl | null>(null);
+}: NoaaLidarControlReactProps): null {
+  const controlRef = useRef<NoaaLidarControl | null>(null);
   const addedRef = useRef(false);
 
   useEffect(() => {
     if (!map || addedRef.current) return;
 
     // Create and add control
-    const control = new UsgsLidarControl(options);
+    const control = new NoaaLidarControl(options);
     controlRef.current = control;
 
     // Set up event listeners

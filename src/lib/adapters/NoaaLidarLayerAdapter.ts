@@ -1,56 +1,56 @@
 import type { CustomLayerAdapter, LayerState } from 'maplibre-gl-layer-control';
-import type { UsgsLidarControl } from '../core/UsgsLidarControl';
+import type { NoaaLidarControl } from '../core/NoaaLidarControl';
 
 /**
- * Adapter for integrating USGS LiDAR point cloud layers with maplibre-gl-layer-control.
+ * Adapter for integrating NOAA LiDAR point cloud layers with maplibre-gl-layer-control.
  *
- * This adapter allows USGS LiDAR point clouds to appear in the layer control panel,
+ * This adapter allows NOAA LiDAR point clouds to appear in the layer control panel,
  * enabling visibility toggles and opacity sliders for each loaded point cloud.
  *
  * @example
  * ```typescript
- * import { UsgsLidarControl, UsgsLidarLayerAdapter } from 'maplibre-gl-usgs-lidar';
+ * import { NoaaLidarControl, NoaaLidarLayerAdapter } from 'maplibre-gl-noaa-lidar';
  * import { LayerControl } from 'maplibre-gl-layer-control';
  *
- * const usgsControl = new UsgsLidarControl({ ... });
- * map.addControl(usgsControl, 'top-right');
+ * const noaaControl = new NoaaLidarControl({ ... });
+ * map.addControl(noaaControl, 'top-right');
  *
- * // Create adapter after adding USGS control
- * const usgsAdapter = new UsgsLidarLayerAdapter(usgsControl);
+ * // Create adapter after adding NOAA control
+ * const noaaAdapter = new NoaaLidarLayerAdapter(noaaControl);
  *
  * // Add layer control with the adapter
  * const layerControl = new LayerControl({
- *   customLayerAdapters: [usgsAdapter],
+ *   customLayerAdapters: [noaaAdapter],
  * });
  * map.addControl(layerControl, 'top-left');
  * ```
  */
-export class UsgsLidarLayerAdapter implements CustomLayerAdapter {
-  readonly type = 'usgs-lidar';
+export class NoaaLidarLayerAdapter implements CustomLayerAdapter {
+  readonly type = 'noaa-lidar';
 
-  private _usgsControl: UsgsLidarControl;
+  private _noaaControl: NoaaLidarControl;
   private _changeCallbacks: Array<(event: 'add' | 'remove', layerId: string) => void> = [];
   private _unsubscribe?: () => void;
 
   /**
-   * Creates a new UsgsLidarLayerAdapter.
+   * Creates a new NoaaLidarLayerAdapter.
    *
-   * @param usgsControl - The UsgsLidarControl instance to adapt
+   * @param noaaControl - The NoaaLidarControl instance to adapt
    */
-  constructor(usgsControl: UsgsLidarControl) {
-    this._usgsControl = usgsControl;
+  constructor(noaaControl: NoaaLidarControl) {
+    this._noaaControl = noaaControl;
     this._setupEventListeners();
   }
 
   /**
-   * Sets up event listeners on the UsgsLidarControl to detect layer changes.
+   * Sets up event listeners on the NoaaLidarControl to detect layer changes.
    */
   private _setupEventListeners(): void {
     // Listen for load and unload events
     const handleLoad = (event: { pointCloud?: { id: string } }) => {
       if (event.pointCloud?.id) {
         // Find the item ID from the loaded items map
-        const state = this._usgsControl.getState();
+        const state = this._noaaControl.getState();
         for (const [itemId, info] of state.loadedItems.entries()) {
           if (info.id === event.pointCloud.id) {
             this._notifyLayerAdded(itemId);
@@ -66,12 +66,12 @@ export class UsgsLidarLayerAdapter implements CustomLayerAdapter {
       }
     };
 
-    this._usgsControl.on('loadcomplete', handleLoad as any);
-    this._usgsControl.on('unload', handleUnload as any);
+    this._noaaControl.on('loadcomplete', handleLoad as any);
+    this._noaaControl.on('unload', handleUnload as any);
 
     this._unsubscribe = () => {
-      this._usgsControl.off('loadcomplete', handleLoad as any);
-      this._usgsControl.off('unload', handleUnload as any);
+      this._noaaControl.off('loadcomplete', handleLoad as any);
+      this._noaaControl.off('unload', handleUnload as any);
     };
   }
 
@@ -81,7 +81,7 @@ export class UsgsLidarLayerAdapter implements CustomLayerAdapter {
    * @returns Array of item IDs for loaded point clouds
    */
   getLayerIds(): string[] {
-    const state = this._usgsControl.getState();
+    const state = this._noaaControl.getState();
     return Array.from(state.loadedItems.keys());
   }
 
@@ -92,12 +92,12 @@ export class UsgsLidarLayerAdapter implements CustomLayerAdapter {
    * @returns LayerState or null if not found
    */
   getLayerState(layerId: string): LayerState | null {
-    const state = this._usgsControl.getState();
+    const state = this._noaaControl.getState();
     const info = state.loadedItems.get(layerId);
     if (!info) return null;
 
     // Access the LiDAR control's point cloud manager through internal state
-    const lidarControl = this._usgsControl.getLidarControl();
+    const lidarControl = this._noaaControl.getLidarControl();
     const manager = (lidarControl as any)?._pointCloudManager;
 
     const visible = manager?.getPointCloudVisibility(info.id) ?? true;
@@ -108,7 +108,7 @@ export class UsgsLidarLayerAdapter implements CustomLayerAdapter {
       opacity,
       name: this.getName(layerId),
       isCustomLayer: true,
-      customLayerType: 'usgs-lidar',
+      customLayerType: 'noaa-lidar',
     };
   }
 
@@ -119,11 +119,11 @@ export class UsgsLidarLayerAdapter implements CustomLayerAdapter {
    * @param visible - Whether the layer should be visible
    */
   setVisibility(layerId: string, visible: boolean): void {
-    const state = this._usgsControl.getState();
+    const state = this._noaaControl.getState();
     const info = state.loadedItems.get(layerId);
     if (!info) return;
 
-    const lidarControl = this._usgsControl.getLidarControl();
+    const lidarControl = this._noaaControl.getLidarControl();
     const manager = (lidarControl as any)?._pointCloudManager;
     manager?.setPointCloudVisibility(info.id, visible);
   }
@@ -135,11 +135,11 @@ export class UsgsLidarLayerAdapter implements CustomLayerAdapter {
    * @param opacity - Opacity value (0-1)
    */
   setOpacity(layerId: string, opacity: number): void {
-    const state = this._usgsControl.getState();
+    const state = this._noaaControl.getState();
     const info = state.loadedItems.get(layerId);
     if (!info) return;
 
-    const lidarControl = this._usgsControl.getLidarControl();
+    const lidarControl = this._noaaControl.getLidarControl();
     const manager = (lidarControl as any)?._pointCloudManager;
     manager?.setPointCloudOpacity(info.id, opacity);
   }
@@ -151,7 +151,7 @@ export class UsgsLidarLayerAdapter implements CustomLayerAdapter {
    * @returns Display name for the layer
    */
   getName(layerId: string): string {
-    const state = this._usgsControl.getState();
+    const state = this._noaaControl.getState();
     const info = state.loadedItems.get(layerId);
     if (info) {
       return info.name;
