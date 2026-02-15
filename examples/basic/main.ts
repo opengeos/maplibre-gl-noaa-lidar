@@ -12,8 +12,8 @@ import 'maplibre-gl-layer-control/style.css';
 const map = new maplibregl.Map({
   container: 'map',
   style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-  center: [-80.0, 32.8],
-  zoom: 7,
+  center: [-100, 40],
+  zoom: 3.5,
   maxPitch: 85,
 });
 
@@ -22,8 +22,8 @@ map.addControl(new maplibregl.NavigationControl(), 'top-right');
 map.addControl(new maplibregl.FullscreenControl(), 'top-right');
 map.addControl(new maplibregl.ScaleControl(), 'bottom-right');
 
-// Add terrain control
-map.addControl(new TerrainControl(), 'top-right');
+// // Add terrain control
+// map.addControl(new TerrainControl(), 'top-right');
 
 // Add NOAA LiDAR control when map loads
 map.on('load', () => {
@@ -50,15 +50,13 @@ map.on('load', () => {
       id: 'google-satellite',
       type: 'raster',
       source: 'google-satellite',
-      minzoom: 15,
       paint: {
         'raster-opacity': 1,
       },
       layout: {
-        visibility: 'visible',
+        visibility: 'none',
       },
     },
-    firstSymbolId
   );
 
   // Create the NOAA LiDAR control (created first for adapter, added to map after layer control)
@@ -83,7 +81,7 @@ map.on('load', () => {
     basemapStyleUrl: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
     customLayerAdapters: [noaaLidarAdapter],
     excludeDrawnLayers: true,
-    excludeLayers: ['*Draw*'],
+    excludeLayers: ['*Draw*', "Noaa*"],
   });
   map.addControl(layerControl, 'top-right');
 

@@ -58,148 +58,45 @@ describe('StacSearcher', () => {
   });
 
   describe('searchByExtent', () => {
-    const mockCatalog = {
-      type: 'Catalog',
-      id: 'noaa-coastal-lidar',
-      stac_version: '1.0.0',
-      description: 'NOAA Coastal LiDAR',
-      links: [
-        { rel: 'item', href: './DigitalCoast_mission_13754.json' },
-        { rel: 'item', href: './DigitalCoast_mission_10418.json' },
-      ],
-    };
-
-    const mockItem13754 = {
-      id: 'DigitalCoast_mission_13754',
-      type: 'Feature',
-      stac_version: '1.0.0',
-      geometry: {
-        type: 'Polygon',
-        coordinates: [[[-80, 32], [-79, 32], [-79, 33], [-80, 33], [-80, 32]]],
-      },
-      bbox: [-80, 32, -79, 33],
-      properties: {
-        datetime: '2020-01-01T00:00:00Z',
-        title: 'South Carolina Coast',
-        'pc:count': 1000000,
-      },
-      links: [],
-      assets: {
-        data: {
-          href: 'https://noaa-nos-coastal-lidar-pds.s3.amazonaws.com/entwine/geoid18/13754/ept.json',
-        },
-      },
-    };
-
-    const mockItem10418 = {
-      id: 'DigitalCoast_mission_10418',
-      type: 'Feature',
-      stac_version: '1.0.0',
-      geometry: {
-        type: 'Polygon',
-        coordinates: [[[-82, 30], [-81, 30], [-81, 31], [-82, 31], [-82, 30]]],
-      },
-      bbox: [-82, 30, -81, 31],
-      properties: {
-        datetime: '2019-01-01T00:00:00Z',
-        title: 'Florida Coast',
-        'pc:count': 500000,
-      },
-      links: [],
-      assets: {
-        data: {
-          href: 'https://noaa-nos-coastal-lidar-pds.s3.amazonaws.com/entwine/geoid18/10418/ept.json',
-        },
-      },
-    };
-
-    it('should fetch catalog and return matching items', async () => {
-      // Mock catalog fetch
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockCatalog),
-      } as Response);
-
-      // Mock item fetches
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockItem13754),
-      } as Response);
-
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockItem10418),
-      } as Response);
-
-      // Search for South Carolina coast area
-      const result = await searcher.searchByExtent([-80.5, 32, -79, 33], 10);
+    it('should use pre-built index and return matching items', async () => {
+      // No fetch calls needed - uses pre-built index
+      const result = await searcher.searchByExtent([-80.5, 32.5, -79.5, 33], 10);
 
       expect(result.type).toBe('FeatureCollection');
-      expect(result.features.length).toBe(1);
-      expect(result.features[0].id).toBe('DigitalCoast_mission_13754');
+      expect(result.features.length).toBeGreaterThan(0);
+      // Should not have made any fetch calls (using pre-built index)
+      expect(fetchSpy.mock.calls.length).toBe(0);
     });
 
-    it('should use cached data on subsequent searches', async () => {
-      // First search - fetches from network
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockCatalog),
-      } as Response);
+    it('should return results within the requested limit', async () => {
+      const result = await searcher.searchByExtent([-85, 25, -75, 35], 5);
 
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockItem13754),
-      } as Response);
-
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockItem10418),
-      } as Response);
-
-      await searcher.searchByExtent([-80, 32, -79, 33], 10);
-      const initialFetchCount = fetchSpy.mock.calls.length;
-
-      // Second search - should use cache
-      await searcher.searchByExtent([-82, 30, -81, 31], 10);
-
-      // No additional fetches should have been made
-      expect(fetchSpy.mock.calls.length).toBe(initialFetchCount);
+      expect(result.type).toBe('FeatureCollection');
+      expect(result.features.length).toBeLessThanOrEqual(5);
     });
 
     it('should return empty results for non-matching bbox', async () => {
-      // Mock catalog fetch
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockCatalog),
-      } as Response);
-
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockItem13754),
-      } as Response);
-
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockItem10418),
-      } as Response);
-
-      // Search for area with no data
-      const result = await searcher.searchByExtent([-100, 40, -99, 41], 10);
+      // Search for area with no NOAA coastal data (central Asia)
+      const result = await searcher.searchByExtent([70, 40, 75, 45], 10);
 
       expect(result.type).toBe('FeatureCollection');
       expect(result.features.length).toBe(0);
     });
 
-    it('should throw error on catalog fetch failure', async () => {
-      fetchSpy.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        statusText: 'Internal Server Error',
-      } as Response);
+    it('should include EPT URL in asset data', async () => {
+      const result = await searcher.searchByExtent([-80.5, 32.5, -79.5, 33], 1);
 
-      await expect(searcher.searchByExtent([-80, 32, -79, 33], 10)).rejects.toThrow(
-        'Failed to fetch NOAA STAC catalog'
-      );
+      expect(result.features.length).toBeGreaterThan(0);
+      const feature = result.features[0];
+      expect(feature.assets.data).toBeDefined();
+      expect(feature.assets.data?.href).toContain('ept.json');
+    });
+
+    it('should report numberMatched and numberReturned', async () => {
+      const result = await searcher.searchByExtent([-85, 25, -75, 35], 5);
+
+      expect(result.numberMatched).toBeGreaterThanOrEqual(result.numberReturned!);
+      expect(result.numberReturned).toBeLessThanOrEqual(5);
     });
   });
 
@@ -232,31 +129,115 @@ describe('StacSearcher', () => {
     });
   });
 
-  describe('clearCache', () => {
-    it('should clear cached items', async () => {
-      const mockCatalog = {
-        type: 'Catalog',
-        id: 'noaa-coastal-lidar',
-        stac_version: '1.0.0',
-        description: 'NOAA Coastal LiDAR',
-        links: [],
-      };
+  describe('getIndexInfo', () => {
+    it('should return info about the pre-built index', () => {
+      const info = searcher.getIndexInfo();
 
-      fetchSpy.mockResolvedValue({
+      expect(info.source).toBe('prebuilt');
+      expect(info.itemCount).toBeGreaterThan(0);
+      expect(info.generatedAt).toBeDefined();
+    });
+  });
+
+  describe('clearCache', () => {
+    it('should clear localStorage cache', () => {
+      // Simulate cached data
+      localStorageMock.setItem('noaa-lidar-stac-items', JSON.stringify({
+        data: [],
+        timestamp: Date.now(),
+        expiresAt: Date.now() + 86400000,
+      }));
+
+      searcher.clearCache();
+
+      expect(localStorageMock.getItem('noaa-lidar-stac-items')).toBeNull();
+    });
+  });
+
+  describe('rebuildIndex', () => {
+    const mockCatalog = {
+      type: 'Catalog',
+      id: 'noaa-coastal-lidar',
+      stac_version: '1.0.0',
+      description: 'NOAA Coastal LiDAR',
+      links: [
+        { rel: 'item', href: './DigitalCoast_mission_13754.json' },
+      ],
+    };
+
+    const mockItem13754 = {
+      id: 'DigitalCoast_mission_13754',
+      type: 'Feature',
+      stac_version: '1.0.0',
+      geometry: {
+        type: 'Polygon',
+        coordinates: [[[-80, 32], [-79, 32], [-79, 33], [-80, 33], [-80, 32]]],
+      },
+      bbox: [-80, 32, -79, 33],
+      properties: {
+        datetime: '2020-01-01T00:00:00Z',
+        title: 'South Carolina Coast',
+        'pc:count': 1000000,
+      },
+      links: [],
+      assets: {
+        data: {
+          href: 'https://noaa-nos-coastal-lidar-pds.s3.amazonaws.com/entwine/geoid18/13754/ept.json',
+        },
+      },
+    };
+
+    it('should fetch fresh data from NOAA catalog', async () => {
+      fetchSpy.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(mockCatalog),
       } as Response);
 
-      // First search
-      await searcher.searchByExtent([-80, 32, -79, 33], 10);
-      const fetchCountAfterFirst = fetchSpy.mock.calls.length;
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockItem13754),
+      } as Response);
 
-      // Clear cache
-      searcher.clearCache();
+      const progressCalls: [number, number][] = [];
+      const items = await searcher.rebuildIndex((progress, total) => {
+        progressCalls.push([progress, total]);
+      });
 
-      // Second search should fetch again
-      await searcher.searchByExtent([-80, 32, -79, 33], 10);
-      expect(fetchSpy.mock.calls.length).toBeGreaterThan(fetchCountAfterFirst);
+      expect(items.length).toBe(1);
+      expect(items[0].id).toBe('DigitalCoast_mission_13754');
+      expect(fetchSpy.mock.calls.length).toBe(2); // catalog + 1 item
+      expect(progressCalls.length).toBeGreaterThan(0);
+    });
+
+    it('should throw error on catalog fetch failure', async () => {
+      fetchSpy.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+      } as Response);
+
+      await expect(searcher.rebuildIndex()).rejects.toThrow(
+        'Failed to fetch NOAA STAC catalog'
+      );
+    });
+
+    it('should save rebuilt index to localStorage cache', async () => {
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockCatalog),
+      } as Response);
+
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockItem13754),
+      } as Response);
+
+      await searcher.rebuildIndex();
+
+      const cached = localStorageMock.getItem('noaa-lidar-stac-items');
+      expect(cached).not.toBeNull();
+      const parsed = JSON.parse(cached!);
+      expect(parsed.data.length).toBe(1);
     });
   });
 });
